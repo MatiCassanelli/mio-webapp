@@ -10,7 +10,7 @@ import {
 import { LockOutlined } from '@mui/icons-material';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../Routes';
 import { UserContext } from '../context/UserContext';
@@ -26,7 +26,6 @@ export const Login = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
-      setLoading(false);
     } catch (error) {
       console.log(error);
       setLoading(false);
@@ -34,12 +33,14 @@ export const Login = () => {
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      navigate(ROUTES.HOME);
+    }
+  }, [navigate, user]);
+
   if (loading) {
     return <CircularProgress />;
-  }
-
-  if (user) {
-    navigate(ROUTES.HOME);
   }
 
   return (
