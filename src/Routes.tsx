@@ -20,25 +20,31 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
 export const Routes = () => {
   return (
     <RoutesDom>
-      <Route path={ROUTES.APP}>
-        <Route
-          path={ROUTES.HOME}
-          element={
-            <PrivateRoute>
-              <Home />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path={ROUTES.DASHBOARD}
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route path={ROUTES.LOGIN} element={<Login />} />
-      </Route>
+      <Route
+        path={ROUTES.APP}
+        element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.HOME}
+        element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route path={ROUTES.LOGIN} element={<Login />} />
     </RoutesDom>
   );
 };
