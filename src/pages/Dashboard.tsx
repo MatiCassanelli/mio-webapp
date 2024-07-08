@@ -1,9 +1,9 @@
 import { Container, Typography } from '@mui/material';
 
-export const Home = () => {
+export const Dashboard = () => {
   return (
     <Container>
-      <Typography>Home page</Typography>
+      <Typography>Dashboard page</Typography>
     </Container>
   );
 };

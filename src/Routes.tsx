@@ -3,13 +3,15 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { ReactElement, useContext } from 'react';
 import { UserContext } from './context/UserContext';
+import { BasePage } from './pages/BasePage';
+import { Dashboard } from './pages/Dashboard';
 import { ROUTES } from './constants';
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
   const { user } = useContext(UserContext);
 
   if (user) {
-    return children;
+    return <BasePage>{children}</BasePage>;
   }
 
   return <Navigate to={ROUTES.LOGIN} />;
@@ -24,6 +26,14 @@ export const Routes = () => {
           element={
             <PrivateRoute>
               <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path={ROUTES.DASHBOARD}
+          element={
+            <PrivateRoute>
+              <Dashboard />
             </PrivateRoute>
           }
         />
