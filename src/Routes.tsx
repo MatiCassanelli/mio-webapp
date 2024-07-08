@@ -3,13 +3,7 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { ReactElement, useContext } from 'react';
 import { UserContext } from './context/UserContext';
-const APP_PATH = '';
-
-export const ROUTES = {
-  APP: APP_PATH,
-  HOME: `${APP_PATH}/home`,
-  LOGIN: `${APP_PATH}/login`,
-};
+import { ROUTES } from './constants';
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
   const { user } = useContext(UserContext);

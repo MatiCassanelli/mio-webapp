@@ -12,7 +12,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../Routes';
+import { ROUTES } from '../constants';
 import { UserContext } from '../context/UserContext';
 
 export const Login = () => {
