@@ -10,7 +10,7 @@ import {
 import { LockOutlined } from '@mui/icons-material';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { useContext, useEffect, useState } from 'react';
+import { FormEvent, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../constants';
 import { UserContext } from '../context/UserContext';
@@ -22,7 +22,8 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
@@ -59,7 +60,7 @@ export const Login = () => {
         <Typography component="h1" variant="h5">
           Iniciar sesion
         </Typography>
-        <Box sx={{ mt: 1 }}>
+        <form onSubmit={handleSubmit}>
           <TextField
             value={email}
             margin="normal"
@@ -88,7 +89,7 @@ export const Login = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            onClick={handleSubmit}
+            type="submit"
           >
             Sign In
           </Button>
@@ -97,7 +98,7 @@ export const Login = () => {
               {error}
             </Typography>
           )}
-        </Box>
+        </form>
       </Box>
     </Container>
   );
