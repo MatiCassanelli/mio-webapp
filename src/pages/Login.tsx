@@ -36,7 +36,7 @@ export const Login = () => {
 
   useEffect(() => {
     if (user) {
-      navigate(ROUTES.HOME);
+      navigate(ROUTES.TRANSACTIONS);
     }
   }, [navigate, user]);
 

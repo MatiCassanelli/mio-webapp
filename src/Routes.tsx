@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes as RoutesDom } from 'react-router-dom';
-import { Home } from './pages/Home';
+import { Transactions } from './pages/Transactions';
 import { Login } from './pages/Login';
 import { ReactElement, useContext } from 'react';
 import { UserContext } from './context/UserContext';
@@ -24,15 +24,15 @@ export const Routes = () => {
         path={ROUTES.APP}
         element={
           <PrivateRoute>
-            <Home />
+            <Transactions />
           </PrivateRoute>
         }
       />
       <Route
-        path={ROUTES.HOME}
+        path={ROUTES.TRANSACTIONS}
         element={
           <PrivateRoute>
-            <Home />
+            <Transactions />
           </PrivateRoute>
         }
       />
