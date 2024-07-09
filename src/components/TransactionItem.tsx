@@ -35,7 +35,7 @@ export const Amount = ({
         ...sx,
       }}
     >
-      {prefix} {amount}
+      {prefix} {amount.toLocaleString('es')}
     </Typography>
   );
 };
