@@ -24,18 +24,21 @@ export const Amount = ({
   sx?: SxProps;
 }) => {
   const { palette } = useTheme();
-  const prefix = `${income ? '+' : '-'} ${currency} `;
+  const prefix = `${income ? '+' : '-'} ${currency}`;
+  const localeAmount = amount.toLocaleString('es-ar', {
+    minimumFractionDigits: 2,
+  });
+  const amountToShow = `${prefix} ${localeAmount}`;
 
   return (
     <Typography
       variant="h6"
       sx={{
         color: income ? palette.success.main : palette.error.main,
-        lineHeight: 0,
         ...sx,
       }}
     >
-      {prefix} {amount.toLocaleString('es')}
+      {amountToShow}
     </Typography>
   );
 };
@@ -62,29 +65,30 @@ export const TransactionItem = ({
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-          }}
-        >
-          <Typography sx={{ flex: 1 }}>{description}</Typography>
-          <Amount
-            amount={amount}
-            income={income}
-            currency={category.currency}
-          />
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
+            gap: 1,
           }}
         >
-          <CategoryChip variant="outlined" size="small" category={category} />
-          <Typography variant="caption" sx={{ fontWeight: 600 }}>
-            {new Date(date).toLocaleString('es', {
-              month: 'long',
-              day: '2-digit',
-            })}
-          </Typography>
+          <Box sx={{ flex: 1 }}>
+            <Typography>{description}</Typography>
+            <CategoryChip variant="outlined" size="small" category={category} />
+          </Box>
+          <Box>
+            <Amount
+              amount={amount}
+              income={income}
+              currency={category.currency}
+            />
+            <Typography
+              variant="caption"
+              sx={{ fontWeight: 600, display: 'block', textAlign: 'right' }}
+            >
+              {date.toDate().toLocaleString('es', {
+                month: 'long',
+                day: '2-digit',
+              })}
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </ListItem>
