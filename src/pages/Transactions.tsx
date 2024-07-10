@@ -7,29 +7,33 @@ import {
 import { TransactionItem } from '../components/TransactionItem';
 import { Transaction } from '../types/Transaction';
 import { Fragment } from 'react/jsx-runtime';
-import { useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { FirestoreError, where } from 'firebase/firestore';
 import { getAllTransactions } from '../services/transactions';
-import { FirestoreError } from 'firebase/firestore';
+import { UserContext } from '../context/UserContext';
 
 export const Transactions = () => {
+  const { user } = useContext(UserContext);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const getTransactions = async () => {
+  const getTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await getAllTransactions();
-      setTransactions(response);
+      const response = await getAllTransactions([
+        where('userId', '==', user?.uid),
+      ]);
+      setTransactions(response as Transaction[]);
       setError('');
     } catch (error) {
-      setError((error as FirestoreError).message);
+      setError((error as FirestoreError)?.message);
     }
     setLoading(false);
-  };
+  }, [user?.uid]);
 
   useEffect(() => {
     getTransactions();
-  }, []);
+  }, [getTransactions]);
 
   return (
     <Container>
