@@ -10,15 +10,17 @@ import {
   DocumentData,
   addDoc,
   deleteDoc,
+  QueryOrderByConstraint,
 } from 'firebase/firestore';
 import { db } from './config';
 
 export const getDocuments = async (
   collectionName: string,
-  query: QueryFieldFilterConstraint[] = []
+  query: QueryFieldFilterConstraint[] = [],
+  orderBy: QueryOrderByConstraint
 ) => {
   const collection = firestoreCollection(db, collectionName);
-  const q = firestoreQuery(collection, ...query);
+  const q = firestoreQuery(collection, ...query, orderBy);
   const querySnapshot = await getDocs(q);
   return querySnapshot;
 };

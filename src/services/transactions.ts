@@ -1,4 +1,4 @@
-import { QueryFieldFilterConstraint } from 'firebase/firestore';
+import { orderBy, QueryFieldFilterConstraint } from 'firebase/firestore';
 import { getDocuments } from '../firebase/db';
 import { Transaction } from '../types/Transaction';
 
@@ -8,7 +8,11 @@ export const getAllTransactions = async (
   query: QueryFieldFilterConstraint[] = []
 ) => {
   try {
-    const documents = await getDocuments(collectionName, query);
+    const documents = await getDocuments(
+      collectionName,
+      query,
+      orderBy('date', 'desc')
+    );
     return documents.docs.map((x) => ({
       ...(x.data() as Transaction),
       id: x.id,
