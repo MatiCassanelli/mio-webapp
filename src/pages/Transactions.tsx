@@ -38,7 +38,9 @@ export const Transactions = () => {
   return (
     <Container>
       {loading && <CircularProgress />}
-      {error && <Typography>{error}</Typography>}
+      {error && (
+        <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
+      )}
       {!loading &&
         !error &&
         transactions.map((transaction) => (
