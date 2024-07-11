@@ -1,16 +1,10 @@
-import {
-  CircularProgress,
-  Container,
-  Divider,
-  Typography,
-} from '@mui/material';
-import { TransactionItem } from '../components/TransactionItem';
+import { CircularProgress, Container, Typography } from '@mui/material';
 import { Transaction } from '../types/Transaction';
-import { Fragment } from 'react/jsx-runtime';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { FirestoreError, where } from 'firebase/firestore';
 import { getAllTransactions } from '../services/transactions';
 import { UserContext } from '../context/UserContext';
+import { TransactionList } from '../components/TransactionList';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -35,20 +29,18 @@ export const Transactions = () => {
     getTransactions();
   }, [getTransactions]);
 
+  if (loading) {
+    return <CircularProgress />;
+  }
+  if (error) {
+    <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>;
+  }
+
   return (
-    <Container>
-      {loading && <CircularProgress />}
-      {error && (
-        <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
-      )}
-      {!loading &&
-        !error &&
-        transactions.map((transaction) => (
-          <Fragment key={transaction.id}>
-            <TransactionItem transaction={transaction} />
-            <Divider sx={{ marginY: 1 }} />
-          </Fragment>
-        ))}
-    </Container>
+    <>
+      <Container>
+        {!loading && !error && <TransactionList transactions={transactions} />}
+      </Container>
+    </>
   );
 };
