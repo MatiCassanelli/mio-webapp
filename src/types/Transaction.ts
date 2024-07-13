@@ -1,9 +1,10 @@
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from 'firebase/firestore';
 
 export interface Category {
   name: string;
   color: string;
   currency: string;
+  id: string;
 }
 
 export interface Transaction {
@@ -12,5 +13,6 @@ export interface Transaction {
   amount: number;
   date: Timestamp;
   description: string;
-  id: string;
+  id?: string;
+  userId?: string;
 }
