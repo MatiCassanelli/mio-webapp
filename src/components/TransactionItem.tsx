@@ -11,6 +11,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { Transaction } from '../types/Transaction';
 import { CategoryChip } from './CategoryChip';
+import { toLocaleAmount } from '../utils/toLocaleAmount';
 
 export const Amount = ({
   amount,
@@ -25,10 +26,7 @@ export const Amount = ({
 }) => {
   const { palette } = useTheme();
   const prefix = `${income ? '+' : '-'} ${currency}`;
-  const localeAmount = amount.toLocaleString('es-ar', {
-    minimumFractionDigits: 2,
-  });
-  const amountToShow = `${prefix} ${localeAmount}`;
+  const amountToShow = `${prefix} ${toLocaleAmount(amount)}`;
 
   return (
     <Typography
@@ -73,7 +71,7 @@ export const TransactionItem = ({
             <Typography>{description}</Typography>
             <CategoryChip variant="outlined" size="small" category={category} />
           </Box>
-          <Box>
+          <Box sx={{ textAlign: 'right' }}>
             <Amount
               amount={amount}
               income={income}

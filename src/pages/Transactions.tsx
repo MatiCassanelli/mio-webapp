@@ -66,7 +66,7 @@ export const Transactions = () => {
             <TransactionList transactions={transactions} />
             <SpeedDial
               ariaLabel="Acciones para movimientos"
-              sx={{ position: 'absolute', bottom: 16, right: 16 }}
+              sx={{ position: 'fixed', bottom: 16, right: 16 }}
               icon={<SpeedDialIcon />}
               onClose={() => setSpeedDialOpen(false)}
               onOpen={() => setSpeedDialOpen(true)}
