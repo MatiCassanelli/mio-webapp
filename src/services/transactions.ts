@@ -8,6 +8,9 @@ import {
   FirestoreError,
   addDoc,
   getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { Transaction } from '../types/Transaction';
 import { db } from '../firebase/config';
@@ -47,6 +50,22 @@ export const createTransaction = async (transaction: Transaction) => {
   try {
     const document = await addDoc(collection, transaction);
     return { ...transaction, id: document.id };
+  } catch (error) {
+    throw error;
+  }
+};
+export const editTransaction = async (transaction: Transaction) => {
+  try {
+    const docRef = doc(db, collectionName, transaction.id as string);
+    return await setDoc(docRef, transaction, { merge: true });
+  } catch (error) {
+    throw error;
+  }
+};
+export const deleteTransaction = async (transactionId: string) => {
+  try {
+    const docRef = doc(db, collectionName, transactionId);
+    return await deleteDoc(docRef);
   } catch (error) {
     throw error;
   }

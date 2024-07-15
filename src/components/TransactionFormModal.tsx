@@ -18,26 +18,40 @@ import { useContext, useEffect, useState } from 'react';
 import { Category, Transaction } from '../types/Transaction';
 import { getAllCategories } from '../services/categories';
 import { FirestoreError, Timestamp } from 'firebase/firestore';
-import { createTransaction } from '../services/transactions';
+import {
+  createTransaction,
+  deleteTransaction,
+  editTransaction,
+} from '../services/transactions';
 import { UserContext } from '../context/UserContext';
 import { ButtonWithSpinner } from './ButtonWithSpinner';
 
 export interface EditDeploymentPlanNameModalProps {
   open: boolean;
   onClose: () => void;
+  existingTransaction?: Transaction;
 }
 
 export const TransactionFormModal = ({
   open,
   onClose,
+  existingTransaction,
 }: EditDeploymentPlanNameModalProps) => {
   const { user } = useContext(UserContext);
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(
+    existingTransaction?.amount ?? 0
+  );
   const [income, setIncome] = useState(false);
-  const [category, setCategory] = useState<string>('Wise');
+  const [category, setCategory] = useState<string>(
+    existingTransaction?.category.name ?? ''
+  );
   const [categories, setCategories] = useState<Category[]>();
-  const [date, setDate] = useState<Dayjs>(dayjs());
-  const [description, setDescription] = useState<string>('');
+  const [date, setDate] = useState<Dayjs>(
+    dayjs(existingTransaction?.date.toDate()) ?? dayjs()
+  );
+  const [description, setDescription] = useState<string>(
+    existingTransaction?.description ?? ''
+  );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -60,8 +74,25 @@ export const TransactionFormModal = ({
       userId: user?.uid,
     };
     try {
-      const data = await createTransaction(newTransaction);
-      console.log(data);
+      if (!!existingTransaction) {
+        await editTransaction({
+          ...newTransaction,
+          id: existingTransaction.id,
+        });
+      } else {
+        await createTransaction(newTransaction);
+      }
+      onClose();
+    } catch (error) {
+      setError((error as FirestoreError).message);
+    }
+    setLoading(false);
+  };
+
+  const onDeleteClick = async () => {
+    setLoading(true);
+    try {
+      await deleteTransaction(existingTransaction?.id as string);
       onClose();
     } catch (error) {
       setError((error as FirestoreError).message);
@@ -72,7 +103,9 @@ export const TransactionFormModal = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       {error && <Typography>{error}</Typography>}
-      <DialogTitle>Nuevo movimiento</DialogTitle>
+      <DialogTitle>
+        {existingTransaction ? 'Editar' : 'Nuevo'} movimiento
+      </DialogTitle>
       <DialogContent className="margined">
         <Box
           sx={{
@@ -152,7 +185,19 @@ export const TransactionFormModal = ({
           disabled={loading}
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ paddingX: 3, paddingBottom: 2 }}>
+        {!!existingTransaction && (
+          <ButtonWithSpinner
+            variant="outlined"
+            loading={loading}
+            onClick={onDeleteClick}
+            disabled={loading}
+            color="error"
+            sx={{ marginRight: 'auto  ' }}
+          >
+            Borrar
+          </ButtonWithSpinner>
+        )}
         <Button variant="outlined" onClick={onClose} disabled={loading}>
           Cancelar
         </Button>
