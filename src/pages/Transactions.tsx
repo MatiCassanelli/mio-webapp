@@ -60,7 +60,7 @@ export const Transactions = () => {
 
   return (
     <>
-      <Container>
+      <Container sx={{ padding: 0 }}>
         {!loading && !error && (
           <>
             <TransactionList transactions={transactions} />
