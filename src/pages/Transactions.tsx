@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   CircularProgress,
   Container,
   SpeedDial,
@@ -7,6 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Transaction } from '../types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { where } from 'firebase/firestore';
@@ -14,6 +18,7 @@ import { getTransactionsSnapshot } from '../services/transactions';
 import { UserContext } from '../context/UserContext';
 import { TransactionList } from '../components/TransactionList';
 import { TransactionFormModal } from '../components/TransactionFormModal';
+import { TotalCardList } from '../components/CategoryTotalCard';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -22,6 +27,7 @@ export const Transactions = () => {
   const [loading, setLoading] = useState(false);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
+  const [showTotals, setShowTotals] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -60,9 +66,33 @@ export const Transactions = () => {
 
   return (
     <>
-      <Container sx={{ padding: 0 }}>
+      <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
         {!loading && !error && (
           <>
+            <Accordion
+              expanded={showTotals}
+              onChange={() => setShowTotals(!showTotals)}
+              elevation={0}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls="total-panel"
+                id="total-panel"
+                sx={{
+                  minHeight: '24px',
+                  height: '24px',
+                  '&.Mui-expanded': {
+                    minHeight: '24px',
+                    height: '24px',
+                  },
+                }}
+              >
+                {showTotals ? 'Ocultar' : 'Ver'} totales
+              </AccordionSummary>
+              <AccordionDetails sx={{ padding: 0 }}>
+                <TotalCardList transactions={transactions} />
+              </AccordionDetails>
+            </Accordion>
             <TransactionList transactions={transactions} />
             <SpeedDial
               ariaLabel="Acciones para movimientos"

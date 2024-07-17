@@ -5,6 +5,7 @@ export interface Category {
   color: string;
   currency: string;
   id: string;
+  isUSDValue: boolean;
 }
 
 export interface Transaction {
