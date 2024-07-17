@@ -66,7 +66,7 @@ export const TransactionFormModal = ({
   const onSave = async () => {
     setLoading(true);
     const newTransaction: Transaction = {
-      amount,
+      amount: income ? amount : amount * -1,
       category: categories?.find((x) => x.name === category) as Category,
       income,
       date: Timestamp.fromDate(date.toDate()),

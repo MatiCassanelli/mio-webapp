@@ -4,42 +4,12 @@ import {
   Avatar,
   Box,
   Typography,
-  useTheme,
-  SxProps,
 } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { Transaction } from '../types/Transaction';
 import { CategoryChip } from './CategoryChip';
-import { toLocaleAmount } from '../utils/toLocaleAmount';
-
-export const Amount = ({
-  amount,
-  income,
-  currency,
-  sx,
-}: {
-  amount: number;
-  income: boolean;
-  currency: string;
-  sx?: SxProps;
-}) => {
-  const { palette } = useTheme();
-  const prefix = `${income ? '+' : '-'} ${currency}`;
-  const amountToShow = `${prefix} ${toLocaleAmount(amount)}`;
-
-  return (
-    <Typography
-      variant="h6"
-      sx={{
-        color: income ? palette.success.main : palette.error.main,
-        ...sx,
-      }}
-    >
-      {amountToShow}
-    </Typography>
-  );
-};
+import { Amount } from './Amount';
 
 export const TransactionItem = ({
   transaction,
