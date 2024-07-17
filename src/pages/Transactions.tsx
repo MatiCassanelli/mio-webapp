@@ -11,14 +11,14 @@ import {
 } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Transaction } from '../types/Transaction';
+import { Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { where } from 'firebase/firestore';
-import { getTransactionsSnapshot } from '../services/transactions';
-import { UserContext } from '../context/UserContext';
-import { TransactionList } from '../components/TransactionList';
-import { TransactionFormModal } from '../components/TransactionFormModal';
-import { TotalCardList } from '../components/CategoryTotalCard';
+import { getTransactionsSnapshot } from 'services/transactions';
+import { UserContext } from 'context/UserContext';
+import { TransactionList } from 'components/transaction/TransactionList';
+import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
+import { TotalCardList } from 'components/category/CategoryTotalCard';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);

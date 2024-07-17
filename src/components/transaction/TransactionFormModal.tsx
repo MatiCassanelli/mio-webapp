@@ -15,16 +15,16 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs, { Dayjs } from 'dayjs';
 import { useContext, useEffect, useState } from 'react';
-import { Category, Transaction } from '../types/Transaction';
-import { getAllCategories } from '../services/categories';
+import { Category, Transaction } from 'types/Transaction';
+import { getAllCategories } from 'services/categories';
 import { FirestoreError, Timestamp } from 'firebase/firestore';
 import {
   createTransaction,
   deleteTransaction,
   editTransaction,
-} from '../services/transactions';
-import { UserContext } from '../context/UserContext';
-import { ButtonWithSpinner } from './ButtonWithSpinner';
+} from 'services/transactions';
+import { UserContext } from 'context/UserContext';
+import { ButtonWithSpinner } from 'components/common/ButtonWithSpinner';
 
 export interface EditDeploymentPlanNameModalProps {
   open: boolean;

@@ -9,11 +9,11 @@ import {
 } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth } from 'firestore/config';
 import { FormEvent, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../constants';
-import { UserContext } from '../context/UserContext';
+import { ROUTES } from 'lib';
+import { UserContext } from 'context/UserContext';
 
 export const Login = () => {
   const navigate = useNavigate();

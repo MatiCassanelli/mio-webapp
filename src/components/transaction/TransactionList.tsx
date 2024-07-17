@@ -1,8 +1,8 @@
 import { Divider, List, ListItemButton } from '@mui/material';
-import { Transaction } from '../types/Transaction';
-import { TransactionItem } from './TransactionItem';
+import { Transaction } from 'types/Transaction';
+import { TransactionItem } from 'components/transaction/TransactionItem';
 import { useState } from 'react';
-import { TransactionFormModal } from './TransactionFormModal';
+import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
 
 export const TransactionList = ({
   transactions,

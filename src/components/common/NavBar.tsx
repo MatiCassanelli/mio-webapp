@@ -17,9 +17,9 @@ import { useState } from 'react';
 import { LinkProps, useNavigate } from 'react-router-dom';
 import { Logout, Menu } from '@mui/icons-material';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase/config';
-import { PAGES } from '../constants';
-import { useMatchPath } from '../hooks/useMatchPath';
+import { auth } from 'firestore/config';
+import { PAGES } from 'lib';
+import { useMatchPath } from 'hooks/useMatchPath';
 
 export const NavBarLink = ({ to, children }: LinkProps) => {
   const { palette } = useTheme();

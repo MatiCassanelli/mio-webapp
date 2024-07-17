@@ -12,7 +12,7 @@ import {
   deleteDoc,
   QueryOrderByConstraint,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from 'firestore/config';
 
 export const getDocuments = async (
   collectionName: string,

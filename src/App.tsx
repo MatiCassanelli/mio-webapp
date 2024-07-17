@@ -1,7 +1,6 @@
 import { LocalizationProvider } from '@mui/x-date-pickers';
-import './App.css';
-import { Routes } from './Routes';
-import UserProvider from './context/UserContext';
+import { Routes } from 'Routes';
+import UserProvider from 'context/UserContext';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 

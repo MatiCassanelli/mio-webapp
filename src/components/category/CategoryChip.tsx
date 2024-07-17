@@ -1,5 +1,5 @@
 import { Chip, ChipProps } from '@mui/material';
-import { Category } from '../types/Transaction';
+import { Category } from 'types/Transaction';
 
 export const CategoryChip = ({
   category,

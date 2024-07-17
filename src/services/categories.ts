@@ -1,5 +1,5 @@
-import { db } from '../firebase/config';
-import { Category } from '../types/Transaction';
+import { db } from 'firestore/config';
+import { Category } from 'types/Transaction';
 import {
   collection as firestoreCollection,
   query as firestoreQuery,

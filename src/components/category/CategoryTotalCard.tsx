@@ -1,9 +1,9 @@
 import { Box, Card, Typography } from '@mui/material';
-import { Amount } from './Amount';
-import { Category, Transaction } from '../types/Transaction';
-import { toLocaleAmount } from '../utils/toLocaleAmount';
+import { Amount } from 'components/common/Amount';
+import { Category, Transaction } from 'types/Transaction';
+import { toLocaleAmount } from 'utils/toLocaleAmount';
 import { useEffect, useState } from 'react';
-import { getAllCategories } from '../services/categories';
+import { getAllCategories } from 'services/categories';
 
 export const TotalCard = ({
   title,
@@ -23,12 +23,7 @@ export const TotalCard = ({
       }}
     >
       <Typography>{title}</Typography>
-      <Amount
-        amount={amount}
-        income={income}
-        variant="h5"
-        currency="$"
-      />
+      <Amount amount={amount} income={income} variant="h5" currency="$" />
     </Card>
   );
 };

@@ -12,8 +12,8 @@ import {
   setDoc,
   deleteDoc,
 } from 'firebase/firestore';
-import { Transaction } from '../types/Transaction';
-import { db } from '../firebase/config';
+import { Transaction } from 'types/Transaction';
+import { db } from 'firestore/config';
 
 const collectionName = 'transactions';
 const collection = firestoreCollection(db, collectionName);

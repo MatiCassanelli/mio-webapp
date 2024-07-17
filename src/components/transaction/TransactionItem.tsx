@@ -7,9 +7,9 @@ import {
 } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import { Transaction } from '../types/Transaction';
-import { CategoryChip } from './CategoryChip';
-import { Amount } from './Amount';
+import { Transaction } from 'types/Transaction';
+import { CategoryChip } from 'components/category/CategoryChip';
+import { Amount } from 'components/common/Amount';
 
 export const TransactionItem = ({
   transaction,

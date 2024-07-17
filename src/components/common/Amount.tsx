@@ -1,5 +1,5 @@
 import { Typography, useTheme, TypographyProps } from '@mui/material';
-import { toLocaleAmount } from '../utils/toLocaleAmount';
+import { toLocaleAmount } from 'utils/toLocaleAmount';
 
 export const Amount = ({
   amount,
