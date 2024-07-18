@@ -4,6 +4,10 @@ import UserProvider from 'context/UserContext';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+dayjs.locale('es');
+
 const App = () => {
   const customTheme = createTheme({
     components: {

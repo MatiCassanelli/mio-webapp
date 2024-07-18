@@ -13,7 +13,7 @@ export const Amount = ({
   currency: string;
 } & TypographyProps) => {
   const { palette } = useTheme();
-  const correctAmount = income ? amount : amount * -1;
+  const correctAmount = income || amount === 0 ? amount : amount * -1;
   const amountToShow = `${currency} ${toLocaleAmount(correctAmount)}`;
 
   return (

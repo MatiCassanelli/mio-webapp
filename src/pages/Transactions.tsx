@@ -13,12 +13,14 @@ import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
-import { where } from 'firebase/firestore';
+import { Timestamp, where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
 import { UserContext } from 'context/UserContext';
 import { TransactionList } from 'components/transaction/TransactionList';
 import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
 import { TotalCardList } from 'components/category/CategoryTotalCard';
+import { MonthSelector } from 'components/common/MonthSelector';
+import dayjs, { Dayjs } from 'dayjs';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -28,9 +30,12 @@ export const Transactions = () => {
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
+  const [month, setMonth] = useState<Dayjs>(dayjs());
 
   useEffect(() => {
     setLoading(true);
+    const endOfMonth = month.endOf('month').toDate();
+    const startOfMonth = month.startOf('month').toDate();
     const unsubscribe = getTransactionsSnapshot({
       onSuccess: (querySnapshot) => {
         const docs = querySnapshot.docs.map((x) => ({
@@ -44,10 +49,14 @@ export const Transactions = () => {
         setError(error.message);
         setLoading(false);
       },
-      filters: [where('userId', '==', user?.uid)],
+      filters: [
+        where('userId', '==', user?.uid),
+        where('date', '<=', Timestamp.fromDate(endOfMonth)),
+        where('date', '>=', Timestamp.fromDate(startOfMonth)),
+      ],
     });
     return () => unsubscribe();
-  }, [user?.uid]);
+  }, [user?.uid, month]);
 
   const actions = [
     {
@@ -57,16 +66,14 @@ export const Transactions = () => {
     },
   ];
 
-  if (loading) {
-    return <CircularProgress />;
-  }
-  if (error) {
-    <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>;
-  }
-
   return (
     <>
       <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
+        <MonthSelector onMonthChange={(date) => setMonth(date)} />
+        {loading && <CircularProgress />}
+        {error && (
+          <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
+        )}
         {!loading && !error && (
           <>
             <Accordion
