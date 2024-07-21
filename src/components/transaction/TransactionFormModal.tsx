@@ -5,11 +5,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
-  Select,
   Switch,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
@@ -25,6 +22,7 @@ import {
 } from 'services/transactions';
 import { UserContext } from 'context/UserContext';
 import { ButtonWithSpinner } from 'components/common/ButtonWithSpinner';
+import { InputWithCurrency } from 'components/common/InputWithCurrency';
 
 export interface EditDeploymentPlanNameModalProps {
   open: boolean;
@@ -42,10 +40,10 @@ export const TransactionFormModal = ({
     existingTransaction?.amount ?? 0
   );
   const [income, setIncome] = useState(false);
+  const [categories, setCategories] = useState<Category[]>();
   const [category, setCategory] = useState<string>(
     existingTransaction?.category.name ?? ''
   );
-  const [categories, setCategories] = useState<Category[]>();
   const [date, setDate] = useState<Dayjs>(
     dayjs(existingTransaction?.date.toDate()) ?? dayjs()
   );
@@ -117,41 +115,14 @@ export const TransactionFormModal = ({
             rowGap: 3,
           }}
         >
-          <Box sx={{ display: 'flex' }}>
-            <TextField
-              value={amount}
-              type="number"
-              label="Monto"
-              sx={{
-                flex: 1,
-                '.MuiInputBase-root': { borderRadius: '4px 0 0 4px' },
-                '& .MuiFormLabel-root': {
-                  width: 'fit-content',
-                  display: 'flex',
-                },
-              }}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              disabled={loading}
-            />
-            <Select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={loading}
-              sx={{
-                marginLeft: '-1px',
-                borderRadius: '0px 4px 4px 0',
-                height: '56px',
-              }}
-            >
-              {categories?.map((c) => (
-                <MenuItem value={c.name} key={c.id}>
-                  <Tooltip title={c.name} placement="right">
-                    <Typography>{c.currency}</Typography>
-                  </Tooltip>
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
+          <InputWithCurrency
+            categories={categories}
+            category={category}
+            setCategory={setCategory}
+            amount={amount}
+            setAmount={setAmount}
+            loading={loading}
+          />
           <DatePicker
             label="Fecha"
             value={date}
