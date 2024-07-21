@@ -38,7 +38,7 @@ export const TransactionItem = ({
           }}
         >
           <Box sx={{ flex: 1 }}>
-            <Typography>{description}</Typography>
+            <Typography sx={{ lineHeight: 1.25 }}>{description}</Typography>
             <CategoryChip variant="outlined" size="small" category={category} />
           </Box>
           <Box sx={{ textAlign: 'right' }}>

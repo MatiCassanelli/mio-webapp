@@ -11,6 +11,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { Transaction } from 'types/Transaction';
 import { db } from 'firestore/config';
@@ -66,6 +67,24 @@ export const deleteTransaction = async (transactionId: string) => {
   try {
     const docRef = doc(db, collectionName, transactionId);
     return await deleteDoc(docRef);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const buySellTransaction = async (
+  buyTransaction: Transaction,
+  sellTransaction: Transaction
+) => {
+  try {
+    const batch = writeBatch(db);
+
+    const buyRef = doc(collection);
+    batch.set(buyRef, buyTransaction);
+    const sellRef = doc(collection);
+    batch.set(sellRef, sellTransaction);
+
+    await batch.commit();
   } catch (error) {
     throw error;
   }

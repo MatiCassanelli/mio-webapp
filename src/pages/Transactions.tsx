@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import { Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { Timestamp, where } from 'firebase/firestore';
@@ -21,6 +22,7 @@ import { TransactionFormModal } from 'components/transaction/TransactionFormModa
 import { TotalCardList } from 'components/category/CategoryTotalCard';
 import { MonthSelector } from 'components/common/MonthSelector';
 import dayjs, { Dayjs } from 'dayjs';
+import { BuySellModal } from 'components/transaction/BuySellModal';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -29,6 +31,7 @@ export const Transactions = () => {
   const [loading, setLoading] = useState(false);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
+  const [buySellModalOpen, setBuySellModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
   const [month, setMonth] = useState<Dayjs>(dayjs());
 
@@ -63,6 +66,11 @@ export const Transactions = () => {
       name: 'Crear movimiento',
       icon: <NoteAddIcon />,
       action: () => setNewTransactionModalOpen(true),
+    },
+    {
+      name: 'Movimiento doble',
+      icon: <SyncAltIcon />,
+      action: () => setBuySellModalOpen(true),
     },
   ];
 
@@ -103,7 +111,13 @@ export const Transactions = () => {
             <TransactionList transactions={transactions} />
             <SpeedDial
               ariaLabel="Acciones para movimientos"
-              sx={{ position: 'fixed', bottom: 16, right: 16 }}
+              sx={{
+                position: 'fixed',
+                bottom: 16,
+                right: 16,
+                '.MuiSpeedDialAction-staticTooltip .MuiSpeedDialAction-staticTooltipLabel':
+                  { textWrap: 'nowrap' },
+              }}
               icon={<SpeedDialIcon />}
               onClose={() => setSpeedDialOpen(false)}
               onOpen={() => setSpeedDialOpen(true)}
@@ -115,10 +129,7 @@ export const Transactions = () => {
                   icon={icon}
                   tooltipTitle={name}
                   tooltipOpen
-                  onClick={() => {
-                    setSpeedDialOpen(false);
-                    action();
-                  }}
+                  onClick={action}
                 />
               ))}
             </SpeedDial>
@@ -129,6 +140,12 @@ export const Transactions = () => {
         <TransactionFormModal
           open={newTransactionModalOpen}
           onClose={() => setNewTransactionModalOpen(false)}
+        />
+      )}
+      {buySellModalOpen && (
+        <BuySellModal
+          open={buySellModalOpen}
+          onClose={() => setBuySellModalOpen(false)}
         />
       )}
     </>

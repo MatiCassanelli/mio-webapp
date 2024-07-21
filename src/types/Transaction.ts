@@ -8,6 +8,14 @@ export interface Category {
   isUSDValue: boolean;
 }
 
+export const emptyCategory: Category = {
+  name: '',
+  color: '',
+  currency: '$',
+  id: '',
+  isUSDValue: false,
+};
+
 export interface Transaction {
   income: boolean;
   category: Category;
