@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -7,13 +6,13 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { LockOutlined } from '@mui/icons-material';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from 'firestore/config';
 import { FormEvent, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from 'lib';
 import { UserContext } from 'context/UserContext';
+import MioLogo from 'assets/mio_logo.png';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -54,9 +53,16 @@ export const Login = () => {
           alignItems: 'center',
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-          <LockOutlined />
-        </Avatar>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingY: 1,
+          }}
+        >
+          <img src={MioLogo} alt="logo" width={180} />
+        </Box>
         <Typography component="h1" variant="h5">
           Iniciar sesion
         </Typography>
@@ -67,7 +73,7 @@ export const Login = () => {
             required
             fullWidth
             id="email"
-            label="Email Address"
+            label="Email"
             name="email"
             autoComplete="email"
             autoFocus
@@ -79,7 +85,7 @@ export const Login = () => {
             required
             fullWidth
             name="password"
-            label="Password"
+            label="Contraseña"
             type="password"
             id="password"
             autoComplete="current-password"

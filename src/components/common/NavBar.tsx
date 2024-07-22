@@ -20,6 +20,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from 'firestore/config';
 import { PAGES } from 'lib';
 import { useMatchPath } from 'hooks/useMatchPath';
+import MioLogo from 'assets/mio_logo.png';
 
 export const NavBarLink = ({ to, children }: LinkProps) => {
   const { palette } = useTheme();
@@ -96,13 +97,9 @@ export const NavBar = () => {
             >
               <Menu />
             </IconButton>
-            <Typography
-              variant="h6"
-              component="div"
-              sx={{ display: { xs: 'none', sm: 'block' } }}
-            >
-              MIO
-            </Typography>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
+              <img src={MioLogo} alt="logo" width={90} />
+            </Box>
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 2 }}>
               {PAGES.map(({ name, url }) => (
                 <NavBarLink key={name} to={url}>
@@ -129,17 +126,16 @@ export const NavBar = () => {
           '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 180 },
         }}
       >
-        <Typography
-          variant="h6"
+        <Box
           sx={{
-            height: 56,
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'center',
+            alignItems: 'center',
+            paddingY: 1,
           }}
         >
-          MIO
-        </Typography>
+          <img src={MioLogo} alt="logo" width={140} />
+        </Box>
         <Divider />
         <List>
           {PAGES.map(({ name, url }) => (

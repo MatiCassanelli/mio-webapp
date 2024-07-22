@@ -88,6 +88,12 @@ export const Transactions = () => {
               expanded={showTotals}
               onChange={() => setShowTotals(!showTotals)}
               elevation={0}
+              sx={{
+                margin: 1,
+                '&.Mui-expanded': {
+                  margin: 1,
+                },
+              }}
             >
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
