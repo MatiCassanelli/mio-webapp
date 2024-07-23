@@ -62,7 +62,10 @@ const CategoryTotalCard = ({
 };
 
 const getTotalAmount = (transactions: Transaction[]) => {
-  return transactions.reduce((accum, { amount }) => accum + amount, 0);
+  return transactions.reduce(
+    (accum, { amount, income }) => (income ? accum + amount : accum - amount),
+    0
+  );
 };
 
 export const TotalCardList = ({

@@ -59,7 +59,7 @@ export const BuySellModal = ({
     ) as Category;
 
     const sellTransaction: Transaction = {
-      amount: sellAmount * -1,
+      amount: sellAmount,
       category: sellFullCategory,
       income: false,
       date: Timestamp.now(),
