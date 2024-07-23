@@ -1,4 +1,10 @@
-import { Box, Card, Typography } from '@mui/material';
+import {
+  Box,
+  Card,
+  CardActionArea,
+  CardContent,
+  Typography,
+} from '@mui/material';
 import { Amount } from 'components/common/Amount';
 import { Category, Transaction } from 'types/Transaction';
 import { toLocaleAmount } from 'utils/toLocaleAmount';
@@ -45,18 +51,19 @@ const CategoryTotalCard = ({
     <Card
       sx={{
         flex: 1,
-        padding: 2,
         overflow: 'visible',
         background: isSelected ? blue[50] : '',
-        cursor: 'pointer',
       }}
-      elevation={isSelected ? 0 : 1}
       onClick={() => onCategoryClick(category)}
     >
-      <Typography sx={{ color: category.color, fontSize: '0.875rem' }}>
-        {category.name}
-      </Typography>
-      <Typography variant="h6">{amountToShow}</Typography>
+      <CardActionArea>
+        <CardContent>
+          <Typography sx={{ color: category.color, fontSize: '0.875rem' }}>
+            {category.name}
+          </Typography>
+          <Typography variant="h6">{amountToShow}</Typography>
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 };
