@@ -12,7 +12,7 @@ import {
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import { Transaction } from 'types/Transaction';
+import { Category, Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { Timestamp, where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
@@ -27,6 +27,9 @@ import { BuySellModal } from 'components/transaction/BuySellModal';
 export const Transactions = () => {
   const { user } = useContext(UserContext);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    Transaction[]
+  >([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
@@ -34,11 +37,13 @@ export const Transactions = () => {
   const [buySellModalOpen, setBuySellModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
   const [month, setMonth] = useState<Dayjs>(dayjs());
+  const [filteringCategory, setFilteringCategory] = useState<Category>();
 
   useEffect(() => {
     setLoading(true);
     const endOfMonth = month.endOf('month').toDate();
     const startOfMonth = month.startOf('month').toDate();
+
     const unsubscribe = getTransactionsSnapshot({
       onSuccess: (querySnapshot) => {
         const docs = querySnapshot.docs.map((x) => ({
@@ -59,7 +64,17 @@ export const Transactions = () => {
       ],
     });
     return () => unsubscribe();
-  }, [user?.uid, month]);
+  }, [month, user?.uid]);
+
+  useEffect(() => {
+    if (transactions.length) {
+      setFilteredTransactions(
+        filteringCategory
+          ? transactions.filter((x) => x.category.id === filteringCategory?.id)
+          : transactions
+      );
+    }
+  }, [filteringCategory, transactions]);
 
   const actions = [
     {
@@ -111,10 +126,14 @@ export const Transactions = () => {
                 {showTotals ? 'Ocultar' : 'Ver'} totales
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
-                <TotalCardList transactions={transactions} />
+                <TotalCardList
+                  transactions={filteredTransactions}
+                  setSelectedCategory={setFilteringCategory}
+                  selectedCategory={filteringCategory}
+                />
               </AccordionDetails>
             </Accordion>
-            <TransactionList transactions={transactions} />
+            <TransactionList transactions={filteredTransactions} />
             <SpeedDial
               ariaLabel="Acciones para movimientos"
               sx={{
