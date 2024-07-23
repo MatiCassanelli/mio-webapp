@@ -67,13 +67,11 @@ export const Transactions = () => {
   }, [month, user?.uid]);
 
   useEffect(() => {
-    if (transactions.length) {
-      setFilteredTransactions(
-        filteringCategory
-          ? transactions.filter((x) => x.category.id === filteringCategory?.id)
-          : transactions
-      );
-    }
+    setFilteredTransactions(
+      filteringCategory
+        ? transactions.filter((x) => x.category.id === filteringCategory?.id)
+        : transactions
+    );
   }, [filteringCategory, transactions]);
 
   const actions = [
