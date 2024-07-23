@@ -1,26 +1,37 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { Routes } from 'Routes';
+import UserProvider from 'context/UserContext';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
-function App() {
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+dayjs.locale('es');
+
+const App = () => {
+  const customTheme = createTheme({
+    components: {
+      MuiDialogContent: {
+        styleOverrides: {
+          root: {
+            '&.margined': {
+              paddingTop: '8px',
+            },
+          },
+        },
+      },
+    },
+  });
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider theme={customTheme}>
+      <CssBaseline />
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <UserProvider>
+          <Routes />
+        </UserProvider>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
-}
+};
 
 export default App;
