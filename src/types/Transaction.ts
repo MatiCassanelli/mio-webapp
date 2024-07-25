@@ -1,11 +1,18 @@
 import { Timestamp } from 'firebase/firestore';
 
+export interface SubCategory {
+  name: string;
+  color: string;
+  id: string;
+}
 export interface Category {
   name: string;
   color: string;
   currency: string;
   id: string;
-  isUSDValue: boolean;
+  isUsdValue: boolean;
+  subcategory?: SubCategory;
+  subcategories?: SubCategory[];
 }
 
 export const emptyCategory: Category = {
@@ -13,7 +20,7 @@ export const emptyCategory: Category = {
   color: '',
   currency: '$',
   id: '',
-  isUSDValue: false,
+  isUsdValue: false,
 };
 
 export interface Transaction {

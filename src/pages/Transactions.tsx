@@ -12,7 +12,7 @@ import {
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import { Category, Transaction } from 'types/Transaction';
+import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { Timestamp, where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
@@ -38,6 +38,8 @@ export const Transactions = () => {
   const [showTotals, setShowTotals] = useState(true);
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const [filteringCategory, setFilteringCategory] = useState<Category>();
+  const [filteringSubCategory, setFilteringSubCategory] =
+    useState<SubCategory>();
 
   useEffect(() => {
     setLoading(true);
@@ -73,6 +75,22 @@ export const Transactions = () => {
         : transactions
     );
   }, [filteringCategory, transactions]);
+
+  useEffect(() => {
+    if (filteringSubCategory) {
+      const filtered = transactions.filter(
+        (x) => x.category.subcategory?.id === filteringSubCategory?.id
+      );
+      setFilteredTransactions(filtered);
+    } else if (filteringCategory) {
+      setFilteredTransactions(
+        transactions.filter((x) => x.category.id === filteringCategory?.id)
+      );
+    } else {
+      setFilteredTransactions(transactions);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteringSubCategory, transactions]);
 
   const actions = [
     {
@@ -128,6 +146,8 @@ export const Transactions = () => {
                   transactions={filteredTransactions}
                   setSelectedCategory={setFilteringCategory}
                   selectedCategory={filteringCategory}
+                  setSelectedSubCategory={setFilteringSubCategory}
+                  selectedSubCategory={filteringSubCategory}
                 />
               </AccordionDetails>
             </Accordion>
