@@ -92,6 +92,12 @@ export const Transactions = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteringSubCategory, transactions]);
 
+  useEffect(() => {
+    setFilteredTransactions([]);
+    setFilteringCategory(undefined);
+    setFilteringSubCategory(undefined);
+  }, [month]);
+
   const actions = [
     {
       name: 'Crear movimiento',
@@ -143,7 +149,7 @@ export const Transactions = () => {
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
                 <TotalCardList
-                  transactions={filteredTransactions}
+                  transactions={transactions}
                   setSelectedCategory={setFilteringCategory}
                   selectedCategory={filteringCategory}
                   setSelectedSubCategory={setFilteringSubCategory}
