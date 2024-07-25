@@ -1,4 +1,5 @@
 import {
+  alpha,
   Box,
   Card,
   CardActionArea,
@@ -6,11 +7,10 @@ import {
   Typography,
 } from '@mui/material';
 import { Amount } from 'components/common/Amount';
-import { Category, Transaction } from 'types/Transaction';
+import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { toLocaleAmount } from 'utils/toLocaleAmount';
 import { useEffect, useState } from 'react';
 import { getAllCategories } from 'services/categories';
-import { blue } from '@mui/material/colors';
 
 export const TotalCard = ({
   title,
@@ -52,7 +52,7 @@ const CategoryTotalCard = ({
       sx={{
         flex: 1,
         overflow: 'visible',
-        background: isSelected ? blue[50] : '',
+        background: isSelected ? alpha(category.color, 0.2) : '',
       }}
       onClick={() => onCategoryClick(category)}
     >
@@ -60,6 +60,41 @@ const CategoryTotalCard = ({
         <CardContent>
           <Typography sx={{ color: category.color, fontSize: '0.875rem' }}>
             {category.name}
+          </Typography>
+          <Typography variant="h6">{amountToShow}</Typography>
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+};
+
+const SubCategoryTotalCard = ({
+  category,
+  amount,
+  onSubCategoryClick,
+  isSelected,
+  subCategory,
+}: {
+  category: Category;
+  subCategory: SubCategory;
+  amount: number;
+  onSubCategoryClick: (category: SubCategory) => void;
+  isSelected: boolean;
+}) => {
+  const amountToShow = `${category.currency} ${toLocaleAmount(amount)}`;
+  return (
+    <Card
+      sx={{
+        flex: 1,
+        overflow: 'visible',
+        background: isSelected ? alpha(subCategory.color, 0.2) : '',
+      }}
+      onClick={() => onSubCategoryClick(subCategory)}
+    >
+      <CardActionArea>
+        <CardContent>
+          <Typography sx={{ color: subCategory.color, fontSize: '0.875rem' }}>
+            {subCategory.name}
           </Typography>
           <Typography variant="h6">{amountToShow}</Typography>
         </CardContent>
@@ -79,10 +114,14 @@ export const TotalCardList = ({
   transactions,
   selectedCategory,
   setSelectedCategory,
+  selectedSubCategory,
+  setSelectedSubCategory,
 }: {
   transactions: Transaction[];
   selectedCategory: Category | undefined;
   setSelectedCategory: (category: Category | undefined) => void;
+  selectedSubCategory: SubCategory | undefined;
+  setSelectedSubCategory: (category: SubCategory | undefined) => void;
 }) => {
   const [categories, setCategories] = useState<Category[]>();
   useEffect(() => {
@@ -96,10 +135,10 @@ export const TotalCardList = ({
   }, []);
 
   const incomingTransactions = transactions.filter(
-    (x) => x.income && x.category.isUSDValue
+    (x) => x.income && x.category.isUsdValue
   );
   const outgoingTransactions = transactions.filter(
-    (x) => !x.income && x.category.isUSDValue
+    (x) => !x.income && x.category.isUsdValue
   );
 
   const onCategoryClick = (category: Category) => {
@@ -107,6 +146,13 @@ export const TotalCardList = ({
       setSelectedCategory(undefined);
     } else {
       setSelectedCategory(category);
+    }
+  };
+  const onSubCategoryClick = (subCategory: SubCategory) => {
+    if (subCategory?.id === selectedSubCategory?.id) {
+      setSelectedSubCategory(undefined);
+    } else {
+      setSelectedSubCategory(subCategory);
     }
   };
 
@@ -150,6 +196,30 @@ export const TotalCardList = ({
             category={category}
             onCategoryClick={() => onCategoryClick(category)}
             isSelected={selectedCategory?.id === category.id}
+          />
+        ))}
+      </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 1,
+          padding: 0.5,
+          overflow: 'auto',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {selectedCategory?.subcategories?.map((subcategory) => (
+          <SubCategoryTotalCard
+            key={subcategory.id}
+            amount={getTotalAmount(
+              transactions.filter(
+                (x) => x.category.subcategory?.id === subcategory.id
+              )
+            )}
+            category={selectedCategory}
+            subCategory={subcategory}
+            onSubCategoryClick={() => onSubCategoryClick(subcategory)}
+            isSelected={selectedSubCategory?.id === subcategory.id}
           />
         ))}
       </Box>

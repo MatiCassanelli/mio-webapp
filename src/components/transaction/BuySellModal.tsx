@@ -18,7 +18,7 @@ import { FirestoreError, Timestamp } from 'firebase/firestore';
 import { useContext, useEffect, useState } from 'react';
 import { getAllCategories } from 'services/categories';
 import { buySellTransaction } from 'services/transactions';
-import { Category, Transaction } from 'types/Transaction';
+import { Category, emptyCategory, Transaction } from 'types/Transaction';
 
 export const BuySellModal = ({
   open,
@@ -31,10 +31,10 @@ export const BuySellModal = ({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>();
-  const [sellAmount, setSoldAmount] = useState(0);
-  const [sellCategory, setSoldCategory] = useState('');
-  const [buyAmount, setBoughtAmount] = useState(0);
-  const [buyCategory, setBoughtCategory] = useState('');
+  const [sellAmount, setSellAmount] = useState(0);
+  const [sellCategory, setSellCategory] = useState<Category>(emptyCategory);
+  const [buyAmount, setBuyAmount] = useState(0);
+  const [buyCategory, setBuyCategory] = useState<Category>(emptyCategory);
   const [description, setDescription] = useState('');
   const [rate, setRate] = useState('');
   const [date, setDate] = useState<Dayjs>(dayjs());
@@ -51,16 +51,9 @@ export const BuySellModal = ({
 
   const onSave = async () => {
     setLoading(true);
-    const sellFullCategory = categories?.find(
-      (x) => x.name === sellCategory
-    ) as Category;
-    const buyFullCategory = categories?.find(
-      (x) => x.name === buyCategory
-    ) as Category;
-
     const sellTransaction: Transaction = {
       amount: sellAmount,
-      category: sellFullCategory,
+      category: sellCategory,
       income: false,
       date: Timestamp.now(),
       description,
@@ -68,7 +61,7 @@ export const BuySellModal = ({
     };
     const buyTransaction: Transaction = {
       amount: buyAmount,
-      category: buyFullCategory,
+      category: buyCategory,
       income: true,
       date: Timestamp.now(),
       description,
@@ -84,9 +77,16 @@ export const BuySellModal = ({
   };
 
   useEffect(() => {
-    if (buyCategory && sellCategory) {
+    if (buyCategory.id && sellCategory.id) {
+      const sellDescription = sellCategory.subcategory
+        ? `${sellCategory.name} (${sellCategory.subcategory.name})`
+        : sellCategory.name;
+      const buyDescription = buyCategory.subcategory
+        ? `${buyCategory.name} (${buyCategory.subcategory.name})`
+        : buyCategory.name;
+
       setDescription(
-        `De ${sellCategory} a ${buyCategory}. Cotizacion: ${rate} `
+        `De ${sellDescription} a ${buyDescription}. Cotizacion: ${rate} `
       );
     }
   }, [buyCategory, sellCategory, rate]);
@@ -109,19 +109,19 @@ export const BuySellModal = ({
         >
           <InputWithCurrency
             amount={sellAmount}
-            setAmount={setSoldAmount}
-            categories={categories?.filter((x) => x.name !== buyCategory)}
+            setAmount={setSellAmount}
+            categories={categories}
             category={sellCategory}
-            setCategory={setSoldCategory}
+            setCategory={setSellCategory}
             loading={loading}
             label="De"
           />
           <InputWithCurrency
             amount={buyAmount}
-            setAmount={setBoughtAmount}
-            categories={categories?.filter((x) => x.name !== sellCategory)}
+            setAmount={setBuyAmount}
+            categories={categories}
             category={buyCategory}
-            setCategory={setBoughtCategory}
+            setCategory={setBuyCategory}
             loading={loading}
             label="A"
           />
@@ -148,7 +148,7 @@ export const BuySellModal = ({
           {buyCategory && sellCategory && (
             <FormControl sx={{ flex: 1 }}>
               <TextField
-                label={`Cotizacion ${sellCategory}/${buyCategory}`}
+                label={`Cotizacion ${sellCategory.name}/${buyCategory.name}`}
                 id="rate"
                 value={rate}
                 onChange={(e) => setRate(e.target.value)}
@@ -179,6 +179,12 @@ export const BuySellModal = ({
             !buyAmount ||
             !sellAmount ||
             !buyCategory ||
+            (buyCategory &&
+              buyCategory.subcategories &&
+              !buyCategory.subcategory) ||
+            (sellCategory &&
+              sellCategory.subcategories &&
+              !sellCategory.subcategory) ||
             !sellCategory ||
             !description
           }

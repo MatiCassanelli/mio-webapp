@@ -12,7 +12,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs, { Dayjs } from 'dayjs';
 import { useContext, useEffect, useState } from 'react';
-import { Category, Transaction } from 'types/Transaction';
+import { Category, emptyCategory, Transaction } from 'types/Transaction';
 import { getAllCategories } from 'services/categories';
 import { FirestoreError, Timestamp } from 'firebase/firestore';
 import {
@@ -41,8 +41,8 @@ export const TransactionFormModal = ({
   );
   const [income, setIncome] = useState(false);
   const [categories, setCategories] = useState<Category[]>();
-  const [category, setCategory] = useState<string>(
-    existingTransaction?.category.name ?? ''
+  const [category, setCategory] = useState<Category>(
+    existingTransaction?.category ?? emptyCategory
   );
   const [date, setDate] = useState<Dayjs>(
     dayjs(existingTransaction?.date.toDate()) ?? dayjs()
@@ -65,7 +65,7 @@ export const TransactionFormModal = ({
     setLoading(true);
     const newTransaction: Transaction = {
       amount,
-      category: categories?.find((x) => x.name === category) as Category,
+      category,
       income,
       date: Timestamp.fromDate(date.toDate()),
       description,
@@ -175,7 +175,12 @@ export const TransactionFormModal = ({
         <ButtonWithSpinner
           variant="contained"
           loading={loading}
-          disabled={!amount || !category || !description}
+          disabled={
+            !amount ||
+            !category ||
+            (category && category.subcategories && !category.subcategory) ||
+            !description
+          }
           onClick={onSave}
         >
           Guardar
