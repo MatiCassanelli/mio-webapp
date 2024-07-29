@@ -19,7 +19,10 @@ import { getTransactionsSnapshot } from 'services/transactions';
 import { UserContext } from 'context/UserContext';
 import { TransactionList } from 'components/transaction/TransactionList';
 import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
-import { TotalCardList } from 'components/category/CategoryTotalCard';
+import {
+  CategoriesTotalList,
+  TotalCards,
+} from 'components/category/CategoryTotalCard';
 import { MonthSelector } from 'components/common/MonthSelector';
 import dayjs, { Dayjs } from 'dayjs';
 import { BuySellModal } from 'components/transaction/BuySellModal';
@@ -148,7 +151,8 @@ export const Transactions = () => {
                 {showTotals ? 'Ocultar' : 'Ver'} totales
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
-                <TotalCardList
+                <TotalCards transactions={transactions} />
+                <CategoriesTotalList
                   transactions={transactions}
                   setSelectedCategory={setFilteringCategory}
                   selectedCategory={filteringCategory}

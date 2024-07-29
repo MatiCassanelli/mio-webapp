@@ -110,7 +110,43 @@ const getTotalAmount = (transactions: Transaction[]) => {
   );
 };
 
-export const TotalCardList = ({
+export const TotalCards = ({
+  transactions,
+}: {
+  transactions: Transaction[];
+}) => {
+  const incomingTransactions = transactions.filter(
+    (x) => x.income && x.category.isUsdValue
+  );
+  const outgoingTransactions = transactions.filter(
+    (x) => !x.income && x.category.isUsdValue
+  );
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 2,
+        padding: 0.5,
+        overflow: 'auto',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <TotalCard
+        amount={getTotalAmount(incomingTransactions)}
+        income={true}
+        title="Total ingresos"
+      />
+      <TotalCard
+        amount={getTotalAmount(outgoingTransactions)}
+        income={false}
+        title="Total egresos"
+      />
+    </Box>
+  );
+};
+
+export const CategoriesTotalList = ({
   transactions,
   selectedCategory,
   setSelectedCategory,
@@ -134,13 +170,6 @@ export const TotalCardList = ({
     getCategories();
   }, []);
 
-  const incomingTransactions = transactions.filter(
-    (x) => x.income && x.category.isUsdValue
-  );
-  const outgoingTransactions = transactions.filter(
-    (x) => !x.income && x.category.isUsdValue
-  );
-
   const onCategoryClick = (category: Category) => {
     if (selectedCategory?.id === category.id) {
       setSelectedCategory(undefined);
@@ -158,26 +187,6 @@ export const TotalCardList = ({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 2,
-          padding: 0.5,
-          overflow: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <TotalCard
-          amount={getTotalAmount(incomingTransactions)}
-          income={true}
-          title="Total ingresos"
-        />
-        <TotalCard
-          amount={getTotalAmount(outgoingTransactions)}
-          income={false}
-          title="Total egresos"
-        />
-      </Box>
       <Box
         sx={{
           display: 'flex',
