@@ -41,7 +41,7 @@ export const TransactionFormModal = ({
   const [amount, setAmount] = useState<number>(
     existingTransaction?.amount ?? 0
   );
-  const [income, setIncome] = useState(false);
+  const [income, setIncome] = useState(!!existingTransaction?.income);
   const [categories, setCategories] = useState<Category[]>();
   const [category, setCategory] = useState<Category>(
     existingTransaction?.category ?? emptyCategory
