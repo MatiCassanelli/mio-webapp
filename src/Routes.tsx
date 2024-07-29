@@ -6,6 +6,7 @@ import { UserContext } from 'context/UserContext';
 import { BasePage } from 'pages/BasePage';
 import { Dashboard } from 'pages/Dashboard';
 import { ROUTES } from 'lib';
+import { Savings } from 'pages/Savings';
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
   const { user } = useContext(UserContext);
@@ -33,6 +34,14 @@ export const Routes = () => {
         element={
           <PrivateRoute>
             <Transactions />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.SAVINGS}
+        element={
+          <PrivateRoute>
+            <Savings />
           </PrivateRoute>
         }
       />

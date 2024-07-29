@@ -4,121 +4,79 @@ import {
   AccordionSummary,
   CircularProgress,
   Container,
-  SpeedDial,
-  SpeedDialAction,
+  Fab,
   SpeedDialIcon,
   Typography,
 } from '@mui/material';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
-import { Timestamp, where } from 'firebase/firestore';
+import { where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
 import { UserContext } from 'context/UserContext';
 import { TransactionList } from 'components/transaction/TransactionList';
 import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
-import {
-  CategoriesTotalList,
-  TotalCards,
-} from 'components/category/CategoryTotalCard';
-import { MonthSelector } from 'components/common/MonthSelector';
-import dayjs, { Dayjs } from 'dayjs';
-import { BuySellModal } from 'components/transaction/BuySellModal';
+import { CategoriesTotalList } from 'components/category/CategoryTotalCard';
 
-export const Transactions = () => {
+export const Savings = () => {
   const { user } = useContext(UserContext);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<
-    Transaction[]
-  >([]);
+  const [savings, setSavings] = useState<Transaction[]>([]);
+  const [filteringSavings, setFilteringSavings] = useState<Transaction[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
-  const [buySellModalOpen, setBuySellModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
-  const [month, setMonth] = useState<Dayjs>(dayjs());
   const [filteringCategory, setFilteringCategory] = useState<Category>();
   const [filteringSubCategory, setFilteringSubCategory] =
     useState<SubCategory>();
 
   useEffect(() => {
     setLoading(true);
-    const endOfMonth = month.endOf('month').toDate();
-    const startOfMonth = month.startOf('month').toDate();
-
     const unsubscribe = getTransactionsSnapshot({
       onSuccess: (querySnapshot) => {
         const docs = querySnapshot.docs.map((x) => ({
           ...(x.data() as Transaction),
           id: x.id,
         }));
-        setTransactions(docs);
+        setSavings(docs);
         setLoading(false);
       },
       onError: (error) => {
         setError(error.message);
         setLoading(false);
       },
-      filters: [
-        where('userId', '==', user?.uid),
-        where('saving', '==', false),
-        where('date', '<=', Timestamp.fromDate(endOfMonth)),
-        where('date', '>=', Timestamp.fromDate(startOfMonth)),
-      ],
+      filters: [where('userId', '==', user?.uid), where('saving', '==', true)],
     });
     return () => unsubscribe();
-  }, [month, user?.uid]);
+  }, [user?.uid]);
 
   useEffect(() => {
-    setFilteredTransactions(
+    setFilteringSavings(
       filteringCategory
-        ? transactions.filter((x) => x.category.id === filteringCategory?.id)
-        : transactions
+        ? savings.filter((x) => x.category.id === filteringCategory?.id)
+        : savings
     );
-  }, [filteringCategory, transactions]);
+  }, [filteringCategory, savings]);
 
   useEffect(() => {
     if (filteringSubCategory) {
-      const filtered = transactions.filter(
+      const filtered = savings.filter(
         (x) => x.category.subcategory?.id === filteringSubCategory?.id
       );
-      setFilteredTransactions(filtered);
+      setFilteringSavings(filtered);
     } else if (filteringCategory) {
-      setFilteredTransactions(
-        transactions.filter((x) => x.category.id === filteringCategory?.id)
+      setFilteringSavings(
+        savings.filter((x) => x.category.id === filteringCategory?.id)
       );
     } else {
-      setFilteredTransactions(transactions);
+      setFilteringSavings(savings);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteringSubCategory, transactions]);
-
-  useEffect(() => {
-    setFilteredTransactions([]);
-    setFilteringCategory(undefined);
-    setFilteringSubCategory(undefined);
-  }, [month]);
-
-  const actions = [
-    {
-      name: 'Crear movimiento',
-      icon: <NoteAddIcon />,
-      action: () => setNewTransactionModalOpen(true),
-    },
-    {
-      name: 'Movimiento doble',
-      icon: <SyncAltIcon />,
-      action: () => setBuySellModalOpen(true),
-    },
-  ];
+  }, [filteringSubCategory, savings]);
 
   return (
     <>
       <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
-        <MonthSelector onMonthChange={(date) => setMonth(date)} />
         {loading && <CircularProgress />}
         {error && (
           <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
@@ -152,9 +110,8 @@ export const Transactions = () => {
                 {showTotals ? 'Ocultar' : 'Ver'} totales
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
-                <TotalCards transactions={transactions} />
                 <CategoriesTotalList
-                  transactions={transactions}
+                  transactions={savings}
                   setSelectedCategory={setFilteringCategory}
                   selectedCategory={filteringCategory}
                   setSelectedSubCategory={setFilteringSubCategory}
@@ -162,9 +119,9 @@ export const Transactions = () => {
                 />
               </AccordionDetails>
             </Accordion>
-            <TransactionList transactions={filteredTransactions} />
-            <SpeedDial
-              ariaLabel="Acciones para movimientos"
+            <TransactionList transactions={filteringSavings} saving />
+            <Fab
+              color="primary"
               sx={{
                 position: 'fixed',
                 bottom: 16,
@@ -172,34 +129,18 @@ export const Transactions = () => {
                 '.MuiSpeedDialAction-staticTooltip .MuiSpeedDialAction-staticTooltipLabel':
                   { textWrap: 'nowrap' },
               }}
-              icon={<SpeedDialIcon />}
-              onClose={() => setSpeedDialOpen(false)}
-              onOpen={() => setSpeedDialOpen(true)}
-              open={speedDialOpen}
+              onClick={() => setNewTransactionModalOpen(true)}
             >
-              {actions.map(({ name, icon, action }) => (
-                <SpeedDialAction
-                  key={name}
-                  icon={icon}
-                  tooltipTitle={name}
-                  tooltipOpen
-                  onClick={action}
-                />
-              ))}
-            </SpeedDial>
+              <SpeedDialIcon />
+            </Fab>
           </>
         )}
       </Container>
       {newTransactionModalOpen && (
         <TransactionFormModal
           open={newTransactionModalOpen}
+          saving
           onClose={() => setNewTransactionModalOpen(false)}
-        />
-      )}
-      {buySellModalOpen && (
-        <BuySellModal
-          open={buySellModalOpen}
-          onClose={() => setBuySellModalOpen(false)}
         />
       )}
     </>

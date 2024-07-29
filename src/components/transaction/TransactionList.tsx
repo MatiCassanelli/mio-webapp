@@ -6,8 +6,10 @@ import { TransactionFormModal } from 'components/transaction/TransactionFormModa
 
 export const TransactionList = ({
   transactions,
+  saving,
 }: {
   transactions: Transaction[] | undefined;
+  saving?: boolean;
 }) => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction>();
   return (
@@ -30,6 +32,7 @@ export const TransactionList = ({
         <TransactionFormModal
           existingTransaction={selectedTransaction}
           open={!!selectedTransaction}
+          saving={saving}
           onClose={() => {
             setSelectedTransaction(undefined);
           }}

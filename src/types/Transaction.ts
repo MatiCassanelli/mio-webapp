@@ -31,4 +31,5 @@ export interface Transaction {
   description: string;
   id?: string;
   userId?: string;
+  saving?: boolean;
 }
