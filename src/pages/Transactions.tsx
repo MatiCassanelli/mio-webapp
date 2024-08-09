@@ -2,7 +2,6 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  CircularProgress,
   Container,
   SpeedDial,
   SpeedDialAction,
@@ -23,7 +22,7 @@ import {
   CategoriesTotalList,
   TotalCards,
 } from 'components/category/CategoryTotalCard';
-import { MonthSelector } from 'components/common/MonthSelector';
+import { MonthTabs } from 'components/common/MonthSelector';
 import dayjs, { Dayjs } from 'dayjs';
 import { BuySellModal } from 'components/transaction/BuySellModal';
 import { getTotalAmount } from 'utils/getTotalAmount';
@@ -126,7 +125,7 @@ export const Transactions = () => {
   return (
     <>
       <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
-        <MonthSelector onMonthChange={(date) => setMonth(date)} />
+        <MonthTabs onMonthChange={(date) => setMonth(date)} />
         {loading && <Loading />}
         {error && (
           <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>

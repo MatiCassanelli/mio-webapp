@@ -4,7 +4,7 @@ import dayjs, { Dayjs } from 'dayjs';
 
 const TABS = 3;
 
-export const MonthSelector = ({
+export const MonthTabs = ({
   onMonthChange,
 }: {
   onMonthChange: (date: Dayjs) => void;
