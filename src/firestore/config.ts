@@ -17,4 +17,7 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const functions = getFunctions(app);
-connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+
+if (process.env.NODE_ENV === 'development') {
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+}
