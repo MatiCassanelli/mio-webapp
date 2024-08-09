@@ -16,29 +16,31 @@ interface calculateYearlyTotalsResponse {
         };
       };
     };
-    monthlyTotals: {
-      month: string;
+    totalsByMonthAndYear: {
+      monthYear: string;
       incomingTotal: number;
       outgoingTotal: number;
     }[];
   };
 }
 
-const calculateYearlyTotals = httpsCallable(functions, 'calculateYearlyTotals');
+const getTotals = httpsCallable(functions, 'getTotals');
 
-export const getYearlyTotals = async (userId: string) => {
+export const getYearlyTotals = async (userId: string, year: number) => {
   try {
-    const result = (await calculateYearlyTotals({
+    const result = (await getTotals({
       userId,
+      year,
     })) as calculateYearlyTotalsResponse;
-    const { monthlyTotals, categoryTotals } = result.data;
-    const parsedMonthlyTotals = monthlyTotals.map((x) => x);
+    const { totalsByMonthAndYear, categoryTotals } = result.data;
+    console.log(totalsByMonthAndYear, categoryTotals)
+    // const { totalsByMonthAndYear, categoryTotals } = mockData;
     const parsedCategoryTotals = Object.values(categoryTotals).map((x) => ({
       ...x,
       subcategories: Object.values(x.subcategories),
     }));
     return {
-      monthlyTotals: parsedMonthlyTotals,
+      totalsByMonthAndYear,
       categoryTotals: parsedCategoryTotals,
     };
   } catch (error) {

@@ -11,6 +11,7 @@ import { getYearlyTotals } from 'services/dashboard';
 import { CategoryTotal, MonthlyTotal } from 'types/Dashboard';
 import { Loading } from './Loading';
 import { FirestoreError } from 'firebase/firestore';
+import { MonthSelector } from 'components/common/MonthSelector';
 
 const getTotalsFromMonthlyData = (monthlyData: MonthlyTotal[]) => {
   const totals = monthlyData.reduce(
@@ -35,6 +36,7 @@ export const Dashboard = () => {
   const [categoryData, setCategoryData] = useState<CategoryTotal[]>([]);
   const [incomingTotal, setIncomingTotal] = useState(0);
   const [outgoingTotal, setOutgoingTotal] = useState(0);
+  const [year, setYear] = useState(new Date().getFullYear());
   const [selectedCategory, setSelectedCategory] = useState<CategoryTotal>();
 
   useEffect(() => {
@@ -42,10 +44,11 @@ export const Dashboard = () => {
       setLoading(true);
       if (user?.uid) {
         try {
-          const { monthlyTotals, categoryTotals } = await getYearlyTotals(
-            user.uid
+          const { totalsByMonthAndYear, categoryTotals } = await getYearlyTotals(
+            user.uid,
+            year
           );
-          setMonthlyData(monthlyTotals);
+          setMonthlyData(totalsByMonthAndYear);
           setCategoryData(categoryTotals);
           setLoading(false);
         } catch (error) {
@@ -57,8 +60,7 @@ export const Dashboard = () => {
     };
 
     fetchYearlyTotals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.uid, year]);
 
   useEffect(() => {
     if (monthlyData.length) {
@@ -83,11 +85,26 @@ export const Dashboard = () => {
     return <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>;
   }
 
+  if (!loading && !error && !monthlyData?.length) {
+    return <Typography>No se encontraron resultados</Typography>;
+  }
+
   return (
     <Box sx={{ height: '100%' }}>
-      <Typography sx={{ fontWeight: 600, margin: '16px 0 8px' }}>
-        Total de movimientos anuales (USD)
-      </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          margin: '16px 0 8px',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Typography sx={{ fontWeight: 600 }}>
+          Total de movimientos anuales (USD)
+        </Typography>
+        <MonthSelector year={year} setYear={setYear} />
+      </Box>
       <Grid
         container
         columns={3}

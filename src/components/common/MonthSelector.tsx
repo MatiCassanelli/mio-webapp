@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Tabs, Tab, Box } from '@mui/material';
+import { Tabs, Tab, Box, MenuItem, Select } from '@mui/material';
 import dayjs, { Dayjs } from 'dayjs';
 
 const TABS = 3;
@@ -51,5 +51,28 @@ export const MonthTabs = ({
         ))}
       </Tabs>
     </Box>
+  );
+};
+
+export const MonthSelector = ({
+  year,
+  setYear,
+}: {
+  year: number;
+  setYear: (year: number) => void;
+}) => {
+  const currentYear = new Date().getFullYear();
+  return (
+    <Select
+      labelId="year"
+      id="year"
+      value={year}
+      onChange={(e) => setYear(e.target.value as number)}
+      size="small"
+    >
+      <MenuItem value={currentYear}>{currentYear}</MenuItem>
+      <MenuItem value={currentYear - 1}>{currentYear - 1}</MenuItem>
+      <MenuItem value={0}>Todos</MenuItem>
+    </Select>
   );
 };

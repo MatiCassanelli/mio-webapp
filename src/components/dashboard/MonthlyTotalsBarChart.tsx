@@ -23,7 +23,7 @@ export const MonthlyTotalsBarChart = ({
         margin={{ top: 0, left: -16, right: 0, bottom: 0 }}
       >
         <CartesianGrid strokeDasharray="4 4" />
-        <XAxis dataKey="month" />
+        <XAxis dataKey="monthYear" />
         <YAxis />
         <Tooltip />
         {/* <Legend /> */}

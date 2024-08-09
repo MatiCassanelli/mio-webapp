@@ -1,7 +1,7 @@
 import { Category, SubCategory } from './Transaction';
 
 export interface MonthlyTotal {
-  month: string;
+  monthYear: string;
   incomingTotal: number;
   outgoingTotal: number;
 }

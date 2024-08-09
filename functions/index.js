@@ -1,5 +1,5 @@
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, Timestamp } = require('firebase-admin/firestore');
+const { getFirestore } = require('firebase-admin/firestore');
 const { onRequest } = require('firebase-functions/v2/https');
 
 initializeApp();
@@ -14,58 +14,66 @@ const formatDateToMMYY = (date) => {
   return `${month}-${year}`;
 };
 
-exports.calculateYearlyTotals = onRequest(async (req, res) => {
+exports.getTotals = onRequest(async (req, res) => {
   const userId = req.method === 'GET' ? req.query.userId : req.body.data.userId;
   if (!userId) {
     res.status(400).send('User ID is required');
     return;
   }
 
-  const currentDate = new Date();
-  const startOfCurrentMonth = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    1,
-  );
+  const filterYear = req.query.year ? parseInt(req.query.year, 10) : null;
 
-  const monthlyTotals = [];
-  const categoryTotals = {};
-
-  for (let i = 0; i < 12; i++) {
-    const startOfMonth = Timestamp.fromDate(new Date(startOfCurrentMonth));
-    const endOfMonth = Timestamp.fromDate(
-      new Date(
-        startOfCurrentMonth.getFullYear(),
-        startOfCurrentMonth.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-      ),
-    );
-
+  try {
     const snapshot = await getFirestore()
       .collection('transactions')
       .where('userId', '==', userId)
       .where('saving', '==', false)
-      .where('date', '>=', startOfMonth)
-      .where('date', '<=', endOfMonth)
+      .orderBy('date', 'asc')
       .get();
 
-    let incomingMonthlyTotal = 0;
-    let outgoingMonthlyTotal = 0;
+    const transactions = snapshot.docs.map((doc) => doc.data());
+    const filteredTransactions = filterYear
+      ? transactions.filter((transaction) => {
+        const transactionYear = transaction.date.toDate().getFullYear();
+        return transactionYear === filterYear;
+      })
+      : transactions;
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const { amount, income } = data;
+    const groupedByMonthAndYear = filteredTransactions.reduce(
+      (acc, transaction) => {
+        const key = formatDateToMMYY(transaction.date.toDate());
+
+        if (!acc[key]) {
+          acc[key] = { incomingTotal: 0, outgoingTotal: 0 };
+        }
+
+        if (transaction.category.id === 'usd') {
+          if (transaction.income) {
+            acc[key].incomingTotal += transaction.amount;
+          } else {
+            acc[key].outgoingTotal += transaction.amount;
+          }
+        }
+
+        return acc;
+      },
+      {},
+    );
+    const totalsByMonthAndYear = Object.keys(groupedByMonthAndYear).map(
+      (key) => ({
+        monthYear: key,
+        incomingTotal: groupedByMonthAndYear[key].incomingTotal,
+        outgoingTotal: groupedByMonthAndYear[key].outgoingTotal
+      }),
+    );
+
+
+    const categoryTotals = {};
+    filteredTransactions.forEach((transaction) => {
+      const { amount, income } = transaction;
 
       // eslint-disable-next-line no-unused-vars
-      const { subcategory, subcategories, ...category } = data.category;
-      if (category.id === 'usd') {
-        income
-          ? (incomingMonthlyTotal += amount)
-          : (outgoingMonthlyTotal += amount);
-      }
+      const { subcategory, subcategories, ...category } = transaction.category;
 
       if (!categoryTotals[category.id]) {
         categoryTotals[category.id] = { total: 0, category, subcategories: {} };
@@ -93,14 +101,9 @@ exports.calculateYearlyTotals = onRequest(async (req, res) => {
       }
     });
 
-    monthlyTotals.unshift({
-      month: formatDateToMMYY(endOfMonth.toDate()),
-      incomingTotal: incomingMonthlyTotal,
-      outgoingTotal: outgoingMonthlyTotal,
-    });
-
-    startOfCurrentMonth.setMonth(startOfCurrentMonth.getMonth() - 1);
+    res.status(200).json({ data: { totalsByMonthAndYear, categoryTotals } });
+  } catch (error) {
+    console.error('Error retrieving transactions:', error);
+    res.status(500).send('Internal Server Error');
   }
-
-  res.send({ data: { monthlyTotals, categoryTotals } });
 });
