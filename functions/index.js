@@ -14,7 +14,7 @@ const formatDateToMMYY = (date) => {
   return `${month}-${year}`;
 };
 
-exports.getTotals = onRequest(async (req, res) => {
+exports.getTotals = onRequest({ cors: true }, async (req, res) => {
   const userId = req.method === 'GET' ? req.query.userId : req.body.data.userId;
   if (!userId) {
     res.status(400).send('User ID is required');
