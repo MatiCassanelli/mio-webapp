@@ -1,11 +1,4 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Container,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Container, TextField, Typography } from '@mui/material';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from 'firestore/config';
 import { FormEvent, useContext, useEffect, useState } from 'react';
@@ -13,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from 'lib';
 import { UserContext } from 'context/UserContext';
 import MioLogo from 'assets/mio_logo.png';
+import { Loading } from './Loading';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -27,7 +21,7 @@ export const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setLoading(false);
       setError('Algo salió mal. Volvé a intentarlo');
     }
@@ -40,7 +34,7 @@ export const Login = () => {
   }, [navigate, user]);
 
   if (loading) {
-    return <CircularProgress />;
+    return <Loading />;
   }
 
   return (

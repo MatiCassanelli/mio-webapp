@@ -4,6 +4,7 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  SxProps,
   Typography,
 } from '@mui/material';
 import { Amount } from 'components/common/Amount';
@@ -11,6 +12,7 @@ import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { toLocaleAmount } from 'utils/toLocaleAmount';
 import { useEffect, useState } from 'react';
 import { getAllCategories } from 'services/categories';
+import { getTotalAmount } from 'utils/getTotalAmount';
 
 export const TotalCard = ({
   title,
@@ -35,7 +37,7 @@ export const TotalCard = ({
   );
 };
 
-const CategoryTotalCard = ({
+export const CategoryTotalCard = ({
   category,
   amount,
   onCategoryClick,
@@ -43,8 +45,8 @@ const CategoryTotalCard = ({
 }: {
   category: Category;
   amount: number;
-  onCategoryClick: (category: Category) => void;
-  isSelected: boolean;
+  onCategoryClick?: (category: Category) => void;
+  isSelected?: boolean;
 }) => {
   const amountToShow = `${category.currency} ${toLocaleAmount(amount)}`;
   return (
@@ -54,7 +56,7 @@ const CategoryTotalCard = ({
         overflow: 'visible',
         background: isSelected ? alpha(category.color, 0.2) : '',
       }}
-      onClick={() => onCategoryClick(category)}
+      onClick={() => onCategoryClick?.(category)}
     >
       <CardActionArea>
         <CardContent>
@@ -68,7 +70,7 @@ const CategoryTotalCard = ({
   );
 };
 
-const SubCategoryTotalCard = ({
+export const SubCategoryTotalCard = ({
   category,
   amount,
   onSubCategoryClick,
@@ -78,8 +80,8 @@ const SubCategoryTotalCard = ({
   category: Category;
   subCategory: SubCategory;
   amount: number;
-  onSubCategoryClick: (category: SubCategory) => void;
-  isSelected: boolean;
+  onSubCategoryClick?: (category: SubCategory) => void;
+  isSelected?: boolean;
 }) => {
   const amountToShow = `${category.currency} ${toLocaleAmount(amount)}`;
   return (
@@ -89,7 +91,7 @@ const SubCategoryTotalCard = ({
         overflow: 'visible',
         background: isSelected ? alpha(subCategory.color, 0.2) : '',
       }}
-      onClick={() => onSubCategoryClick(subCategory)}
+      onClick={() => onSubCategoryClick?.(subCategory)}
     >
       <CardActionArea>
         <CardContent>
@@ -103,14 +105,33 @@ const SubCategoryTotalCard = ({
   );
 };
 
-const getTotalAmount = (transactions: Transaction[]) => {
-  return transactions.reduce(
-    (accum, { amount, income }) => (income ? accum + amount : accum - amount),
-    0
+export const TotalCards = ({
+  incomingTotal,
+  outgoingTotal,
+  sx,
+}: {
+  incomingTotal: number;
+  outgoingTotal: number;
+  sx?: SxProps;
+}) => {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 2,
+        padding: 0.5,
+        overflow: 'auto',
+        whiteSpace: 'nowrap',
+        ...sx,
+      }}
+    >
+      <TotalCard amount={incomingTotal} income={true} title="Total ingresos" />
+      <TotalCard amount={outgoingTotal} income={false} title="Total egresos" />
+    </Box>
   );
 };
 
-export const TotalCardList = ({
+export const CategoriesTotalList = ({
   transactions,
   selectedCategory,
   setSelectedCategory,
@@ -134,13 +155,6 @@ export const TotalCardList = ({
     getCategories();
   }, []);
 
-  const incomingTransactions = transactions.filter(
-    (x) => x.income && x.category.isUsdValue
-  );
-  const outgoingTransactions = transactions.filter(
-    (x) => !x.income && x.category.isUsdValue
-  );
-
   const onCategoryClick = (category: Category) => {
     if (selectedCategory?.id === category.id) {
       setSelectedCategory(undefined);
@@ -158,26 +172,6 @@ export const TotalCardList = ({
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 2,
-          padding: 0.5,
-          overflow: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <TotalCard
-          amount={getTotalAmount(incomingTransactions)}
-          income={true}
-          title="Total ingresos"
-        />
-        <TotalCard
-          amount={getTotalAmount(outgoingTransactions)}
-          income={false}
-          title="Total egresos"
-        />
-      </Box>
       <Box
         sx={{
           display: 'flex',

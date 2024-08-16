@@ -51,21 +51,23 @@ export const BuySellModal = ({
 
   const onSave = async () => {
     setLoading(true);
+    const baseTransaction = {
+      date: Timestamp.fromDate(date.toDate()),
+      description,
+      userId: user?.uid,
+      saving: false,
+    };
     const sellTransaction: Transaction = {
       amount: sellAmount,
       category: sellCategory,
       income: false,
-      date: Timestamp.now(),
-      description,
-      userId: user?.uid,
+      ...baseTransaction,
     };
     const buyTransaction: Transaction = {
       amount: buyAmount,
       category: buyCategory,
       income: true,
-      date: Timestamp.now(),
-      description,
-      userId: user?.uid,
+      ...baseTransaction,
     };
     try {
       await buySellTransaction(sellTransaction, buyTransaction);
@@ -178,14 +180,14 @@ export const BuySellModal = ({
           disabled={
             !buyAmount ||
             !sellAmount ||
-            !buyCategory ||
-            (buyCategory &&
+            !buyCategory.id ||
+            (buyCategory.id &&
               buyCategory.subcategories &&
               !buyCategory.subcategory) ||
-            (sellCategory &&
+            (sellCategory.id &&
               sellCategory.subcategories &&
               !sellCategory.subcategory) ||
-            !sellCategory ||
+            !sellCategory.id ||
             !description
           }
           onClick={onSave}

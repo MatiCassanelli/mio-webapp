@@ -28,18 +28,20 @@ export interface EditDeploymentPlanNameModalProps {
   open: boolean;
   onClose: () => void;
   existingTransaction?: Transaction;
+  saving?: boolean;
 }
 
 export const TransactionFormModal = ({
   open,
   onClose,
   existingTransaction,
+  saving,
 }: EditDeploymentPlanNameModalProps) => {
   const { user } = useContext(UserContext);
   const [amount, setAmount] = useState<number>(
     existingTransaction?.amount ?? 0
   );
-  const [income, setIncome] = useState(false);
+  const [income, setIncome] = useState(!!existingTransaction?.income);
   const [categories, setCategories] = useState<Category[]>();
   const [category, setCategory] = useState<Category>(
     existingTransaction?.category ?? emptyCategory
@@ -70,6 +72,7 @@ export const TransactionFormModal = ({
       date: Timestamp.fromDate(date.toDate()),
       description,
       userId: user?.uid,
+      saving: !!saving,
     };
     try {
       if (!!existingTransaction) {
@@ -98,12 +101,15 @@ export const TransactionFormModal = ({
     setLoading(false);
   };
 
+  const getModalTitle = () => {
+    const action = existingTransaction ? 'Editar' : 'Nuevo';
+    return `${action} ${saving ? 'Ahorro' : 'Movimiento'}`;
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       {error && <Typography>{error}</Typography>}
-      <DialogTitle>
-        {existingTransaction ? 'Editar' : 'Nuevo'} movimiento
-      </DialogTitle>
+      <DialogTitle>{getModalTitle()}</DialogTitle>
       <DialogContent className="margined">
         <Box
           sx={{
@@ -177,8 +183,8 @@ export const TransactionFormModal = ({
           loading={loading}
           disabled={
             !amount ||
-            !category ||
-            (category && category.subcategories && !category.subcategory) ||
+            !category.id ||
+            (category.id && category.subcategories && !category.subcategory) ||
             !description
           }
           onClick={onSave}
