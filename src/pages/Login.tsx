@@ -21,7 +21,7 @@ export const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       setError('');
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setLoading(false);
       setError('Algo salió mal. Volvé a intentarlo');
     }

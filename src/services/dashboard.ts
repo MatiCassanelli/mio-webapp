@@ -33,8 +33,6 @@ export const getYearlyTotals = async (userId: string, year: number) => {
       year,
     })) as calculateYearlyTotalsResponse;
     const { totalsByMonthAndYear, categoryTotals } = result.data;
-    console.log(totalsByMonthAndYear, categoryTotals)
-    // const { totalsByMonthAndYear, categoryTotals } = mockData;
     const parsedCategoryTotals = Object.values(categoryTotals).map((x) => ({
       ...x,
       subcategories: Object.values(x.subcategories),
