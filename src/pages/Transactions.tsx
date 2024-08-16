@@ -2,7 +2,6 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  CircularProgress,
   Container,
   SpeedDial,
   SpeedDialAction,
@@ -23,9 +22,11 @@ import {
   CategoriesTotalList,
   TotalCards,
 } from 'components/category/CategoryTotalCard';
-import { MonthSelector } from 'components/common/MonthSelector';
+import { MonthTabs } from 'components/common/MonthSelector';
 import dayjs, { Dayjs } from 'dayjs';
 import { BuySellModal } from 'components/transaction/BuySellModal';
+import { getTotalAmount } from 'utils/getTotalAmount';
+import { Loading } from './Loading';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -115,11 +116,17 @@ export const Transactions = () => {
     },
   ];
 
+  const getIOTransactions = (income: boolean) => {
+    return transactions.filter(
+      (x) => x.income === income && x.category.isUsdValue
+    );
+  };
+
   return (
     <>
       <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
-        <MonthSelector onMonthChange={(date) => setMonth(date)} />
-        {loading && <CircularProgress />}
+        <MonthTabs onMonthChange={(date) => setMonth(date)} />
+        {loading && <Loading />}
         {error && (
           <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
         )}
@@ -152,7 +159,10 @@ export const Transactions = () => {
                 {showTotals ? 'Ocultar' : 'Ver'} totales
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
-                <TotalCards transactions={transactions} />
+                <TotalCards
+                  incomingTotal={getTotalAmount(getIOTransactions(true))}
+                  outgoingTotal={getTotalAmount(getIOTransactions(false))}
+                />
                 <CategoriesTotalList
                   transactions={transactions}
                   setSelectedCategory={setFilteringCategory}

@@ -10,6 +10,6 @@ export const ROUTES = {
 
 export const PAGES = [
   { name: 'Movimientos', url: ROUTES.TRANSACTIONS },
+  { name: 'Acumulado', url: ROUTES.DASHBOARD },
   { name: 'Ahorros', url: ROUTES.SAVINGS },
-  { name: 'Dashboard', url: ROUTES.DASHBOARD },
 ];
