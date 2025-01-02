@@ -15,13 +15,12 @@ const formatDateToMMYY = (date) => {
 };
 
 exports.getTotals = onRequest({ cors: true }, async (req, res) => {
-  const userId = req.method === 'GET' ? req.query.userId : req.body.data.userId;
+  const { userId, year } = req.body.data;
   if (!userId) {
     res.status(400).send('User ID is required');
     return;
   }
-
-  const filterYear = req.query.year ? parseInt(req.query.year, 10) : null;
+  const filterYear = year ? parseInt(year, 10) : null;
 
   try {
     const snapshot = await getFirestore()
