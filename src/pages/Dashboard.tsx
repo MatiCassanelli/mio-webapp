@@ -36,7 +36,7 @@ export const Dashboard = () => {
   const [categoryData, setCategoryData] = useState<CategoryTotal[]>([]);
   const [incomingTotal, setIncomingTotal] = useState(0);
   const [outgoingTotal, setOutgoingTotal] = useState(0);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<CategoryTotal>();
 
   useEffect(() => {

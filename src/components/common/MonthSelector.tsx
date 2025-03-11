@@ -70,9 +70,9 @@ export const MonthSelector = ({
       onChange={(e) => setYear(e.target.value as number)}
       size="small"
     >
+      <MenuItem value={0}>Todos</MenuItem>
       <MenuItem value={currentYear}>{currentYear}</MenuItem>
       <MenuItem value={currentYear - 1}>{currentYear - 1}</MenuItem>
-      <MenuItem value={0}>Todos</MenuItem>
     </Select>
   );
 };
