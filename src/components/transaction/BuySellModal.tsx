@@ -88,7 +88,7 @@ export const BuySellModal = ({
         : buyCategory.name;
 
       setDescription(
-        `De ${sellDescription} a ${buyDescription}. Cotizacion: ${rate} `
+        `De ${sellDescription} a ${buyDescription}. Cotizacion: ${rate}.`
       );
     }
   }, [buyCategory, sellCategory, rate]);
