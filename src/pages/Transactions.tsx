@@ -117,6 +117,9 @@ export const Transactions = () => {
   ];
 
   const getIOTransactions = (income: boolean) => {
+    if (filteringCategory) {
+      return filteredTransactions.filter((x) => x.income === income);
+    }
     return transactions.filter(
       (x) => x.income === income && x.category.isUsdValue
     );
