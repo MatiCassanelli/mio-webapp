@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Category, SubCategory, Transaction } from 'types/Transaction';
+import { Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
@@ -17,6 +17,7 @@ import { UserContext } from 'context/UserContext';
 import { TransactionList } from 'components/transaction/TransactionList';
 import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
 import { CategoriesTotalList } from 'components/category/CategoryTotalCard';
+import { CategoryContext } from 'context/CategoryContext';
 
 export const Savings = () => {
   const { user } = useContext(UserContext);
@@ -26,9 +27,12 @@ export const Savings = () => {
   const [loading, setLoading] = useState(false);
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
-  const [filteringCategory, setFilteringCategory] = useState<Category>();
-  const [filteringSubCategory, setFilteringSubCategory] =
-    useState<SubCategory>();
+  const {
+    selectedCategory,
+    selectedSubCategory,
+    setSelectedCategory,
+    setSelectedSubCategory,
+  } = useContext(CategoryContext);
 
   useEffect(() => {
     setLoading(true);
@@ -52,27 +56,32 @@ export const Savings = () => {
 
   useEffect(() => {
     setFilteringSavings(
-      filteringCategory
-        ? savings.filter((x) => x.category.id === filteringCategory?.id)
+      selectedCategory
+        ? savings.filter((x) => x.category.id === selectedCategory?.id)
         : savings
     );
-  }, [filteringCategory, savings]);
+  }, [selectedCategory, savings]);
 
   useEffect(() => {
-    if (filteringSubCategory) {
+    if (selectedSubCategory) {
       const filtered = savings.filter(
-        (x) => x.category.subcategory?.id === filteringSubCategory?.id
+        (x) => x.category.subcategory?.id === selectedSubCategory?.id
       );
       setFilteringSavings(filtered);
-    } else if (filteringCategory) {
+    } else if (selectedCategory) {
       setFilteringSavings(
-        savings.filter((x) => x.category.id === filteringCategory?.id)
+        savings.filter((x) => x.category.id === selectedCategory?.id)
       );
     } else {
       setFilteringSavings(savings);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteringSubCategory, savings]);
+  }, [selectedSubCategory, savings]);
+
+  useEffect(() => {
+    setSelectedCategory(undefined);
+    setSelectedSubCategory(undefined);
+  }, [setSelectedCategory, setSelectedSubCategory]);
 
   return (
     <>
@@ -110,13 +119,7 @@ export const Savings = () => {
                 {showTotals ? 'Ocultar' : 'Ver'} totales
               </AccordionSummary>
               <AccordionDetails sx={{ padding: 0 }}>
-                <CategoriesTotalList
-                  transactions={savings}
-                  setSelectedCategory={setFilteringCategory}
-                  selectedCategory={filteringCategory}
-                  setSelectedSubCategory={setFilteringSubCategory}
-                  selectedSubCategory={filteringSubCategory}
-                />
+                <CategoriesTotalList transactions={savings} />
               </AccordionDetails>
             </Accordion>
             <TransactionList transactions={filteringSavings} saving />
