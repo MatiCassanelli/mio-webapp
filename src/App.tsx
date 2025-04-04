@@ -6,6 +6,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
+import CategoryProvider from 'context/CategoryContext';
 dayjs.locale('es');
 
 const App = () => {
@@ -27,7 +28,9 @@ const App = () => {
       <CssBaseline />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <UserProvider>
-          <Routes />
+          <CategoryProvider>
+            <Routes />
+          </CategoryProvider>
         </UserProvider>
       </LocalizationProvider>
     </ThemeProvider>

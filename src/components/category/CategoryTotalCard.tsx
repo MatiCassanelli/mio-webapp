@@ -10,9 +10,9 @@ import {
 import { Amount } from 'components/common/Amount';
 import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { toLocaleAmount } from 'utils/toLocaleAmount';
-import { useEffect, useState } from 'react';
-import { getAllCategories } from 'services/categories';
+import { useContext } from 'react';
 import { getTotalAmount } from 'utils/getTotalAmount';
+import { CategoryContext } from 'context/CategoryContext';
 
 export const TotalCard = ({
   title,
@@ -133,42 +133,16 @@ export const TotalCards = ({
 
 export const CategoriesTotalList = ({
   transactions,
-  selectedCategory,
-  setSelectedCategory,
-  selectedSubCategory,
-  setSelectedSubCategory,
 }: {
   transactions: Transaction[];
-  selectedCategory: Category | undefined;
-  setSelectedCategory: (category: Category | undefined) => void;
-  selectedSubCategory: SubCategory | undefined;
-  setSelectedSubCategory: (category: SubCategory | undefined) => void;
 }) => {
-  const [categories, setCategories] = useState<Category[]>();
-  useEffect(() => {
-    const getCategories = async () => {
-      const response = await getAllCategories();
-      setCategories(
-        (response as Category[]).sort((a, b) => b.id.localeCompare(a.id))
-      );
-    };
-    getCategories();
-  }, []);
-
-  const onCategoryClick = (category: Category) => {
-    if (selectedCategory?.id === category.id) {
-      setSelectedCategory(undefined);
-    } else {
-      setSelectedCategory(category);
-    }
-  };
-  const onSubCategoryClick = (subCategory: SubCategory) => {
-    if (subCategory?.id === selectedSubCategory?.id) {
-      setSelectedSubCategory(undefined);
-    } else {
-      setSelectedSubCategory(subCategory);
-    }
-  };
+  const {
+    categories,
+    onCategoryClick,
+    onSubCategoryClick,
+    selectedCategory,
+    selectedSubCategory,
+  } = useContext(CategoryContext);
 
   return (
     <Box>
