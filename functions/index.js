@@ -14,7 +14,8 @@ const formatDateToMMYY = (date) => {
   return `${month}-${year}`;
 };
 
-exports.getTotals = onRequest({ cors: true }, async (req, res) => {
+// Returns I/O total for all categories and the passed year
+exports.getAllTotals = onRequest({ cors: true }, async (req, res) => {
   const { userId, year } = req.body.data;
   if (!userId) {
     res.status(400).send('User ID is required');
@@ -37,35 +38,6 @@ exports.getTotals = onRequest({ cors: true }, async (req, res) => {
         return transactionYear === filterYear;
       })
       : transactions;
-
-    const groupedByMonthAndYear = filteredTransactions.reduce(
-      (acc, transaction) => {
-        const key = formatDateToMMYY(transaction.date.toDate());
-
-        if (!acc[key]) {
-          acc[key] = { incomingTotal: 0, outgoingTotal: 0 };
-        }
-
-        if (transaction.category.id === 'usd') {
-          if (transaction.income) {
-            acc[key].incomingTotal += transaction.amount;
-          } else {
-            acc[key].outgoingTotal += transaction.amount;
-          }
-        }
-
-        return acc;
-      },
-      {},
-    );
-    const totalsByMonthAndYear = Object.keys(groupedByMonthAndYear).map(
-      (key) => ({
-        monthYear: key,
-        incomingTotal: groupedByMonthAndYear[key].incomingTotal,
-        outgoingTotal: groupedByMonthAndYear[key].outgoingTotal
-      }),
-    );
-
 
     const categoryTotals = {};
     filteredTransactions.forEach((transaction) => {
@@ -100,9 +72,67 @@ exports.getTotals = onRequest({ cors: true }, async (req, res) => {
       }
     });
 
-    res.status(200).json({ data: { totalsByMonthAndYear, categoryTotals } });
+    res.status(200).json({ data: categoryTotals });
   } catch (error) {
     console.error('Error retrieving transactions:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send({ name: 'Internal Server Error', error });
+  }
+});
+
+// Returns total by category for each month
+exports.getMonthlyTotalsByCategory = onRequest({ cors: true }, async (req, res) => {
+  const { userId, year, category } = req.body.data;
+  if (!userId) {
+    res.status(400).send('User ID is required');
+    return;
+  }
+  const filterYear = year ? parseInt(year, 10) : null;
+
+  try {
+    const snapshot = await getFirestore()
+      .collection('transactions')
+      .where('userId', '==', userId)
+      .where('category.id', '==', category)
+      .where('saving', '==', false)
+      .orderBy('date', 'asc')
+      .get();
+
+    const transactions = snapshot.docs.map((doc) => doc.data());
+    const filteredTransactions = filterYear
+      ? transactions.filter((transaction) => {
+        const transactionYear = transaction.date.toDate().getFullYear();
+        return transactionYear === filterYear;
+      })
+      : transactions;
+
+    const groupedByMonthAndYear = filteredTransactions.reduce(
+      (acc, transaction) => {
+        const key = formatDateToMMYY(transaction.date.toDate());
+
+        if (!acc[key]) {
+          acc[key] = { incomingTotal: 0, outgoingTotal: 0 };
+        }
+
+        if (transaction.income) {
+          acc[key].incomingTotal += transaction.amount;
+        } else {
+          acc[key].outgoingTotal += transaction.amount;
+        }
+
+        return acc;
+      },
+      {},
+    );
+    const totalByMonthAndYear = Object.keys(groupedByMonthAndYear).map(
+      (key) => ({
+        monthYear: key,
+        incomingTotal: groupedByMonthAndYear[key].incomingTotal,
+        outgoingTotal: groupedByMonthAndYear[key].outgoingTotal
+      }),
+    );
+    res.status(200).json({ data: totalByMonthAndYear });
+  } catch (error) {
+    console.error('Error retrieving transactions:', error);
+    res.status(500).send({ name: 'Internal Server Error', error });
   }
 });

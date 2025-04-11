@@ -11,7 +11,7 @@ import {
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import { Category, SubCategory, Transaction } from 'types/Transaction';
+import { Transaction } from 'types/Transaction';
 import { useContext, useEffect, useState } from 'react';
 import { Timestamp, where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
@@ -27,6 +27,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { BuySellModal } from 'components/transaction/BuySellModal';
 import { getTotalAmount } from 'utils/getTotalAmount';
 import { Loading } from './Loading';
+import { CategoryContext } from 'context/CategoryContext';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -41,9 +42,12 @@ export const Transactions = () => {
   const [buySellModalOpen, setBuySellModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
   const [month, setMonth] = useState<Dayjs>(dayjs());
-  const [filteringCategory, setFilteringCategory] = useState<Category>();
-  const [filteringSubCategory, setFilteringSubCategory] =
-    useState<SubCategory>();
+  const {
+    selectedCategory,
+    selectedSubCategory,
+    setSelectedCategory,
+    setSelectedSubCategory,
+  } = useContext(CategoryContext);
 
   useEffect(() => {
     setLoading(true);
@@ -75,33 +79,33 @@ export const Transactions = () => {
 
   useEffect(() => {
     setFilteredTransactions(
-      filteringCategory
-        ? transactions.filter((x) => x.category.id === filteringCategory?.id)
+      selectedCategory
+        ? transactions.filter((x) => x.category.id === selectedCategory?.id)
         : transactions
     );
-  }, [filteringCategory, transactions]);
+  }, [selectedCategory, transactions]);
 
   useEffect(() => {
-    if (filteringSubCategory) {
+    if (selectedSubCategory) {
       const filtered = transactions.filter(
-        (x) => x.category.subcategory?.id === filteringSubCategory?.id
+        (x) => x.category.subcategory?.id === selectedSubCategory?.id
       );
       setFilteredTransactions(filtered);
-    } else if (filteringCategory) {
+    } else if (selectedCategory) {
       setFilteredTransactions(
-        transactions.filter((x) => x.category.id === filteringCategory?.id)
+        transactions.filter((x) => x.category.id === selectedCategory?.id)
       );
     } else {
       setFilteredTransactions(transactions);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteringSubCategory, transactions]);
+  }, [selectedSubCategory, transactions]);
 
   useEffect(() => {
     setFilteredTransactions([]);
-    setFilteringCategory(undefined);
-    setFilteringSubCategory(undefined);
-  }, [month]);
+    setSelectedCategory(undefined);
+    setSelectedSubCategory(undefined);
+  }, [month, setSelectedCategory, setSelectedSubCategory]);
 
   const actions = [
     {
@@ -117,7 +121,7 @@ export const Transactions = () => {
   ];
 
   const getIOTransactions = (income: boolean) => {
-    if (filteringCategory) {
+    if (selectedCategory) {
       return filteredTransactions.filter((x) => x.income === income);
     }
     return transactions.filter(
@@ -166,13 +170,7 @@ export const Transactions = () => {
                   incomingTotal={getTotalAmount(getIOTransactions(true))}
                   outgoingTotal={getTotalAmount(getIOTransactions(false))}
                 />
-                <CategoriesTotalList
-                  transactions={transactions}
-                  setSelectedCategory={setFilteringCategory}
-                  selectedCategory={filteringCategory}
-                  setSelectedSubCategory={setFilteringSubCategory}
-                  selectedSubCategory={filteringSubCategory}
-                />
+                <CategoriesTotalList transactions={transactions} />
               </AccordionDetails>
             </Accordion>
             <TransactionList transactions={filteredTransactions} />

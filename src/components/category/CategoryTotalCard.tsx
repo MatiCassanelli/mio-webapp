@@ -4,15 +4,24 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  styled,
   SxProps,
   Typography,
 } from '@mui/material';
 import { Amount } from 'components/common/Amount';
 import { Category, SubCategory, Transaction } from 'types/Transaction';
 import { toLocaleAmount } from 'utils/toLocaleAmount';
-import { useEffect, useState } from 'react';
-import { getAllCategories } from 'services/categories';
+import { useContext } from 'react';
 import { getTotalAmount } from 'utils/getTotalAmount';
+import { CategoryContext } from 'context/CategoryContext';
+
+export const CategoryContainerBox = styled(Box)(() => ({
+  display: 'flex',
+  gap: '8px',
+  padding: '4px',
+  overflow: 'auto',
+  whiteSpace: 'nowrap',
+}));
 
 export const TotalCard = ({
   title,
@@ -133,54 +142,20 @@ export const TotalCards = ({
 
 export const CategoriesTotalList = ({
   transactions,
-  selectedCategory,
-  setSelectedCategory,
-  selectedSubCategory,
-  setSelectedSubCategory,
 }: {
   transactions: Transaction[];
-  selectedCategory: Category | undefined;
-  setSelectedCategory: (category: Category | undefined) => void;
-  selectedSubCategory: SubCategory | undefined;
-  setSelectedSubCategory: (category: SubCategory | undefined) => void;
 }) => {
-  const [categories, setCategories] = useState<Category[]>();
-  useEffect(() => {
-    const getCategories = async () => {
-      const response = await getAllCategories();
-      setCategories(
-        (response as Category[]).sort((a, b) => b.id.localeCompare(a.id))
-      );
-    };
-    getCategories();
-  }, []);
-
-  const onCategoryClick = (category: Category) => {
-    if (selectedCategory?.id === category.id) {
-      setSelectedCategory(undefined);
-    } else {
-      setSelectedCategory(category);
-    }
-  };
-  const onSubCategoryClick = (subCategory: SubCategory) => {
-    if (subCategory?.id === selectedSubCategory?.id) {
-      setSelectedSubCategory(undefined);
-    } else {
-      setSelectedSubCategory(subCategory);
-    }
-  };
+  const {
+    categories,
+    onCategoryClick,
+    onSubCategoryClick,
+    selectedCategory,
+    selectedSubCategory,
+  } = useContext(CategoryContext);
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1,
-          padding: 0.5,
-          overflow: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <CategoryContainerBox>
         {categories?.map((category) => (
           <CategoryTotalCard
             key={category.id}
@@ -192,16 +167,8 @@ export const CategoriesTotalList = ({
             isSelected={selectedCategory?.id === category.id}
           />
         ))}
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          gap: 1,
-          padding: 0.5,
-          overflow: 'auto',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      </CategoryContainerBox>
+      <CategoryContainerBox>
         {selectedCategory?.subcategories?.map((subcategory) => (
           <SubCategoryTotalCard
             key={subcategory.id}
@@ -216,7 +183,7 @@ export const CategoriesTotalList = ({
             isSelected={selectedSubCategory?.id === subcategory.id}
           />
         ))}
-      </Box>
+      </CategoryContainerBox>
     </Box>
   );
 };

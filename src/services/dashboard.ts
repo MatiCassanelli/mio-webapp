@@ -1,46 +1,74 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from 'firestore/config';
 import { Category, SubCategory } from 'types/Transaction';
-
-interface calculateYearlyTotalsResponse {
+interface GetAllTotalsFunctionResponse {
   data: {
-    categoryTotals: {
-      [key: string]: {
-        category: Category;
-        total: number;
-        subcategories: {
-          [subKey: string]: {
-            total: number;
-            subcategory: SubCategory;
-          };
+    [key: string]: {
+      category: Category;
+      total: number;
+      subcategories: {
+        [subKey: string]: {
+          total: number;
+          subcategory: SubCategory;
         };
       };
     };
-    totalsByMonthAndYear: {
-      monthYear: string;
-      incomingTotal: number;
-      outgoingTotal: number;
-    }[];
   };
 }
 
-const getTotals = httpsCallable(functions, 'getTotals');
+interface TotalByMonthAndYear {
+  monthYear: string;
+  incomingTotal: number;
+  outgoingTotal: number;
+}
+interface GetMonthlyTotalsByCategoryFunctionResponse {
+  data: TotalByMonthAndYear[];
+}
 
-export const getYearlyTotals = async (userId: string, year: number) => {
+const getAllTotalsFunction = httpsCallable(functions, 'getAllTotals');
+const getMonthlyTotalsByCategoryFunction = httpsCallable(
+  functions,
+  'getMonthlyTotalsByCategory'
+);
+
+export const getAllTotals = async ({
+  userId,
+  year,
+}: {
+  userId: string;
+  year: number;
+}) => {
   try {
-    const result = (await getTotals({
+    const result = (await getAllTotalsFunction({
       userId,
       year,
-    })) as calculateYearlyTotalsResponse;
-    const { totalsByMonthAndYear, categoryTotals } = result.data;
+    })) as GetAllTotalsFunctionResponse;
+    const categoryTotals = result.data;
     const parsedCategoryTotals = Object.values(categoryTotals).map((x) => ({
       ...x,
       subcategories: Object.values(x.subcategories),
     }));
-    return {
-      totalsByMonthAndYear,
-      categoryTotals: parsedCategoryTotals,
-    };
+    return parsedCategoryTotals;
+  } catch (error) {
+    throw error;
+  }
+};
+export const getMonthlyTotalsByCategory = async ({
+  userId,
+  year,
+  category,
+}: {
+  userId: string;
+  year: number;
+  category: string;
+}) => {
+  try {
+    const result = (await getMonthlyTotalsByCategoryFunction({
+      userId,
+      year,
+      category,
+    })) as GetMonthlyTotalsByCategoryFunctionResponse;
+    return result.data;
   } catch (error) {
     throw error;
   }
