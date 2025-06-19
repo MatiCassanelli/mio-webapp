@@ -1,10 +1,12 @@
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   Switch,
   TextField,
   Typography,
@@ -23,6 +25,10 @@ import {
 import { UserContext } from 'context/UserContext';
 import { ButtonWithSpinner } from 'components/common/ButtonWithSpinner';
 import { InputWithCurrency } from 'components/common/InputWithCurrency';
+import {
+  HelpIconWithTooltip,
+  INTERNAL_TRANSACTION_HELP_TEXT,
+} from 'components/common/HelpIconWithTooltip';
 
 export interface EditDeploymentPlanNameModalProps {
   open: boolean;
@@ -52,6 +58,9 @@ export const TransactionFormModal = ({
   const [description, setDescription] = useState<string>(
     existingTransaction?.description ?? ''
   );
+  const [isInternal, setIsInternal] = useState<boolean>(
+    existingTransaction?.isInternal ?? false
+  );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -73,6 +82,7 @@ export const TransactionFormModal = ({
       description,
       userId: user?.uid,
       saving: !!saving,
+      isInternal,
     };
     try {
       if (!!existingTransaction) {
@@ -109,8 +119,30 @@ export const TransactionFormModal = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       {error && <Typography>{error}</Typography>}
-      <DialogTitle>{getModalTitle()}</DialogTitle>
-      <DialogContent className="margined">
+      <DialogTitle sx={{ paddingBottom: 0 }}>{getModalTitle()}</DialogTitle>
+      <DialogContent className="margined" sx={{ paddingTop: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            marginBottom: 3,
+          }}
+        >
+          <FormControlLabel
+            label="Movimiento interno"
+            labelPlacement="start"
+            control={
+              <Checkbox
+                checked={isInternal}
+                onChange={(e) => setIsInternal(e.target.checked)}
+                disabled={loading}
+              />
+            }
+            sx={{ marginLeft: 0 }}
+          />
+          <HelpIconWithTooltip title={INTERNAL_TRANSACTION_HELP_TEXT} />
+        </Box>
         <Box
           sx={{
             width: '100%',

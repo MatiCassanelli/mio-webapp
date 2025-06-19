@@ -7,6 +7,9 @@ import {
   SpeedDialAction,
   SpeedDialIcon,
   Typography,
+  Switch,
+  FormControlLabel,
+  Box,
 } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -28,6 +31,10 @@ import { BuySellModal } from 'components/transaction/BuySellModal';
 import { getTotalAmount } from 'utils/getTotalAmount';
 import { Loading } from './Loading';
 import { CategoryContext } from 'context/CategoryContext';
+import {
+  HelpIconWithTooltip,
+  INTERNAL_TRANSACTION_HELP_TEXT,
+} from 'components/common/HelpIconWithTooltip';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
@@ -41,6 +48,7 @@ export const Transactions = () => {
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
   const [buySellModalOpen, setBuySellModalOpen] = useState(false);
   const [showTotals, setShowTotals] = useState(true);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const {
     selectedCategory,
@@ -78,14 +86,6 @@ export const Transactions = () => {
   }, [month, user?.uid]);
 
   useEffect(() => {
-    setFilteredTransactions(
-      selectedCategory
-        ? transactions.filter((x) => x.category.id === selectedCategory?.id)
-        : transactions
-    );
-  }, [selectedCategory, transactions]);
-
-  useEffect(() => {
     if (selectedSubCategory) {
       const filtered = transactions.filter(
         (x) => x.category.subcategory?.id === selectedSubCategory?.id
@@ -98,8 +98,43 @@ export const Transactions = () => {
     } else {
       setFilteredTransactions(transactions);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSubCategory, transactions]);
+  }, [selectedCategory, selectedSubCategory, transactions]);
+
+  useEffect(() => {
+    if (!showAllTransactions) {
+      const filtered = transactions.filter((x) => !x.isInternal);
+      if (selectedSubCategory) {
+        const subcategoryFiltered = filtered.filter(
+          (x) => x.category.subcategory?.id === selectedSubCategory?.id
+        );
+        setFilteredTransactions(subcategoryFiltered);
+      } else if (selectedCategory) {
+        setFilteredTransactions(
+          filtered.filter((x) => x.category.id === selectedCategory?.id)
+        );
+      } else {
+        setFilteredTransactions(filtered);
+      }
+    } else {
+      if (selectedSubCategory) {
+        const filtered = transactions.filter(
+          (x) => x.category.subcategory?.id === selectedSubCategory?.id
+        );
+        setFilteredTransactions(filtered);
+      } else if (selectedCategory) {
+        setFilteredTransactions(
+          transactions.filter((x) => x.category.id === selectedCategory?.id)
+        );
+      } else {
+        setFilteredTransactions(transactions);
+      }
+    }
+  }, [
+    showAllTransactions,
+    transactions,
+    selectedCategory,
+    selectedSubCategory,
+  ]);
 
   useEffect(() => {
     setFilteredTransactions([]);
@@ -120,9 +155,18 @@ export const Transactions = () => {
     },
   ];
 
+  const filteredTransactionsWithInternal = showAllTransactions
+    ? transactions
+    : transactions.filter((x) => !x.isInternal);
+
   const getIOTransactions = (income: boolean) => {
     if (selectedCategory) {
       return filteredTransactions.filter((x) => x.income === income);
+    }
+    if (!showAllTransactions) {
+      return transactions.filter(
+        (x) => !x.isInternal && x.income === income && x.category.isUsdValue
+      );
     }
     return transactions.filter(
       (x) => x.income === income && x.category.isUsdValue
@@ -132,7 +176,7 @@ export const Transactions = () => {
   return (
     <>
       <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
-        <MonthTabs onMonthChange={(date) => setMonth(date)} />
+        <MonthTabs onMonthChange={setMonth} />
         {loading && <Loading />}
         {error && (
           <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
@@ -170,9 +214,31 @@ export const Transactions = () => {
                   incomingTotal={getTotalAmount(getIOTransactions(true))}
                   outgoingTotal={getTotalAmount(getIOTransactions(false))}
                 />
-                <CategoriesTotalList transactions={transactions} />
+                <CategoriesTotalList
+                  transactions={filteredTransactionsWithInternal}
+                />
               </AccordionDetails>
             </Accordion>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              <FormControlLabel
+                label="Mostrar movimientos internos"
+                sx={{ marginLeft: 0 }}
+                labelPlacement="start"
+                control={
+                  <Switch
+                    checked={showAllTransactions}
+                    onChange={(e) => setShowAllTransactions(e.target.checked)}
+                  />
+                }
+              />
+              <HelpIconWithTooltip title={INTERNAL_TRANSACTION_HELP_TEXT} />
+            </Box>
             <TransactionList transactions={filteredTransactions} />
             <SpeedDial
               ariaLabel="Acciones para movimientos"

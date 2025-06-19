@@ -32,4 +32,5 @@ export interface Transaction {
   id?: string;
   userId?: string;
   saving?: boolean;
+  isInternal?: boolean;
 }

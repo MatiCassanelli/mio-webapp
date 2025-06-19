@@ -163,7 +163,10 @@ export const CategoriesTotalList = ({
               transactions.filter((x) => x.category.id === category.id)
             )}
             category={category}
-            onCategoryClick={() => onCategoryClick(category)}
+            onCategoryClick={() => {
+              onCategoryClick(category);
+              onSubCategoryClick(undefined);
+            }}
             isSelected={selectedCategory?.id === category.id}
           />
         ))}

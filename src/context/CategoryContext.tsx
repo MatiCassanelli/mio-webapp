@@ -6,7 +6,7 @@ export interface CategoryContextProps {
   categories: Category[] | null;
   loading: boolean;
   onCategoryClick: (category: Category) => void;
-  onSubCategoryClick: (subCategory: SubCategory) => void;
+  onSubCategoryClick: (subCategory: SubCategory | undefined) => void;
   selectedCategory?: Category;
   selectedSubCategory?: SubCategory;
   setSelectedCategory: React.Dispatch<
@@ -50,7 +50,7 @@ const CategoryProvider = ({ children }: PropsWithChildren) => {
       setSelectedCategory(category);
     }
   };
-  const onSubCategoryClick = (subCategory: SubCategory) => {
+  const onSubCategoryClick = (subCategory: SubCategory | undefined) => {
     if (subCategory?.id === selectedSubCategory?.id) {
       setSelectedSubCategory(undefined);
     } else {

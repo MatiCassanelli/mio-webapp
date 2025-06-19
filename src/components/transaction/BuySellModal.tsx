@@ -8,6 +8,8 @@ import {
   TextField,
   Typography,
   FormControl,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
 import { ButtonWithSpinner } from 'components/common/ButtonWithSpinner';
@@ -19,6 +21,10 @@ import { useContext, useEffect, useState } from 'react';
 import { getAllCategories } from 'services/categories';
 import { buySellTransaction } from 'services/transactions';
 import { Category, emptyCategory, Transaction } from 'types/Transaction';
+import {
+  HelpIconWithTooltip,
+  INTERNAL_TRANSACTION_HELP_TEXT,
+} from 'components/common/HelpIconWithTooltip';
 
 export const BuySellModal = ({
   open,
@@ -38,7 +44,7 @@ export const BuySellModal = ({
   const [description, setDescription] = useState('');
   const [rate, setRate] = useState('');
   const [date, setDate] = useState<Dayjs>(dayjs());
-
+  const [isInternal, setIsInternal] = useState(false);
   useEffect(() => {
     const getCategories = async () => {
       setLoading(true);
@@ -61,12 +67,14 @@ export const BuySellModal = ({
       amount: sellAmount,
       category: sellCategory,
       income: false,
+      isInternal,
       ...baseTransaction,
     };
     const buyTransaction: Transaction = {
       amount: buyAmount,
       category: buyCategory,
       income: true,
+      isInternal,
       ...baseTransaction,
     };
     try {
@@ -98,6 +106,28 @@ export const BuySellModal = ({
       {error && <Typography>{error}</Typography>}
       <DialogTitle>Compra - Venta</DialogTitle>
       <DialogContent className="margined">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            marginBottom: 3,
+          }}
+        >
+          <FormControlLabel
+            label="Movimiento interno"
+            labelPlacement="start"
+            control={
+              <Checkbox
+                checked={isInternal}
+                onChange={(e) => setIsInternal(e.target.checked)}
+                disabled={loading}
+              />
+            }
+            sx={{ marginLeft: 0 }}
+          />
+          <HelpIconWithTooltip title={INTERNAL_TRANSACTION_HELP_TEXT} />
+        </Box>
         <Box
           sx={{
             width: '100%',
