@@ -9,6 +9,7 @@ export interface Category {
   name: string;
   color: string;
   currency: string;
+  currencyCode: string;
   id: string;
   isUsdValue: boolean;
   subcategory?: SubCategory;
@@ -19,6 +20,7 @@ export const emptyCategory: Category = {
   name: '',
   color: '',
   currency: '$',
+  currencyCode: '',
   id: '',
   isUsdValue: false,
 };
