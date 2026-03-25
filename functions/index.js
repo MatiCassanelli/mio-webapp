@@ -156,3 +156,31 @@ export const botWebhook = onRequest({ cors: true }, async (req, res) => {
     res.status(500).send({ name: 'Internal Server Error', error });
   }
 });
+
+export const telegramWebhook = onRequest(async (req, res) => {
+  res.sendStatus(200);
+
+  const msg = req.body.message;
+  if (!msg) return;
+
+  const phoneNumber = String(msg.chat.id); // usás el chat_id como identificador
+  const message = msg.text;
+  console.log('Received Telegram message:', { phoneNumber, message });
+  if (!phoneNumber || !message) return;
+
+  try {
+    const reply = await handleBotMessage(phoneNumber, message);
+    await sendTelegramMessage(msg.chat.id, reply);
+  } catch (error) {
+    console.error('Bot error:', error);
+  }
+});
+
+async function sendTelegramMessage(chatId, text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+}
