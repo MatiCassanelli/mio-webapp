@@ -5,6 +5,7 @@
  */
 
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { toLocaleAmount } from './utils.js';
 
 /**
@@ -23,6 +24,42 @@ async function getUserByPhone(phoneNumber) {
 
   if (snapshot.empty) return null;
   return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+}
+
+/**
+ * Finds a user by their Telegram chat ID.
+ * @param {string} chatId
+ * @returns {Promise<Object|null>}
+ */
+async function getUserByTelegramId(chatId) {
+  const db = getFirestore();
+  const snapshot = await db
+    .collection('users')
+    .where('telegramChatId', '==', chatId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return null;
+  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+}
+
+/**
+ * Links a Telegram chat ID to a user account by email.
+ * Looks up the user in Firebase Auth, then saves telegramChatId to their Firestore document.
+ * @param {string} email
+ * @param {string} chatId
+ * @returns {Promise<boolean>} - false if email not found
+ */
+async function linkTelegramUser(email, chatId) {
+  let authUser;
+  try {
+    authUser = await getAuth().getUserByEmail(email.trim().toLowerCase());
+  } catch {
+    return false;
+  }
+
+  await getFirestore().collection('users').doc(authUser.uid).set({ telegramChatId: chatId }, { merge: true });
+  return true;
 }
 
 /**
@@ -156,6 +193,8 @@ async function buildBalanceSummary(userId, transactions, categoriesMap) {
 
 export {
   getUserByPhone,
+  getUserByTelegramId,
+  linkTelegramUser,
   getCategoriesMap,
   getCategoriesList,
   writeTransactions,
