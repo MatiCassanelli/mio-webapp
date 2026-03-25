@@ -53,7 +53,7 @@ async function handleNewMessage(phoneNumber, userId, message, categoriesMap) {
     return parsed.unrecognized_message || 'No entendí el mensaje. Intentá describir la operación de nuevo.';
   }
 
-  const status = parsed.pendingQuestions.length > 0 ? 'awaiting_clarification' : 'awaiting_confirmation';
+  const status = parsed.pendingQuestions && parsed.pendingQuestions.length > 0 ? 'awaiting_clarification' : 'awaiting_confirmation';
 
   await savePendingConversation(phoneNumber, userId, {
     status,
