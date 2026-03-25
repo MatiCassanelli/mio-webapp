@@ -1,7 +1,7 @@
 module.exports = {
   env: {
     es6: true,
-    browser: true,
+    node: true,
     es2021: true,
   },
   extends: ['eslint:recommended', 'google', 'prettier'],

@@ -12,7 +12,7 @@
 
 import { parseFinancialMessage, classifyConfirmationIntent } from './parser.js';
 import { getPendingConversation, savePendingConversation, clearPendingConversation } from './conversation.js';
-import { getUserByPhone, getCategoriesMap, writeTransactions, buildBalanceSummary } from './transactions.js';
+import { getUserByTelegramId, linkTelegramUser, getCategoriesMap, writeTransactions, buildBalanceSummary } from './transactions.js';
 import { toLocaleAmount } from './utils.js';
 
 /**
@@ -138,33 +138,47 @@ async function handleConfirmation(phoneNumber, userId, message, pending, categor
 
 /**
  * Main bot handler. Receives a message and returns a reply string.
- * @param {string} phoneNumber - Sender's phone number (e.g. +5491112345678)
+ * @param {string} chatId - Telegram chat ID
  * @param {string} message - Incoming message text
  * @returns {Promise<string>} - Reply to send back
  */
-async function handleBotMessage(phoneNumber, message) {
-  const user = await getUserByPhone(phoneNumber);
+async function handleBotMessage(chatId, message) {
+  const pending = await getPendingConversation(chatId);
+
+  // Linking flow: user is responding with their email
+  if (pending?.status === 'awaiting_link') {
+    const linked = await linkTelegramUser(message, chatId);
+    await clearPendingConversation(chatId);
+    if (!linked) {
+      return 'No encontré una cuenta con ese email. Verificá que sea el email con el que te registraste en la app.';
+    }
+    return '✅ Cuenta vinculada. Ya podés enviarme tus operaciones.';
+  }
+
+  const user = await getUserByTelegramId(chatId);
+
+  // Unknown user: start linking flow
   if (!user) {
-    return 'Tu número no está vinculado a ninguna cuenta. Ingresá a la app para configurarlo.';
+    await savePendingConversation(chatId, null, { status: 'awaiting_link', transactions: [], pendingQuestions: [] });
+    return '¡Hola! Para empezar, necesito vincular tu cuenta. ¿Cuál es el email con el que te registraste en la app?';
   }
 
   const categoriesMap = await getCategoriesMap();
-  const pending = await getPendingConversation(phoneNumber);
 
   if (!pending) {
-    return handleNewMessage(phoneNumber, user.id, message, categoriesMap);
+    return handleNewMessage(chatId, user.id, message, categoriesMap);
   }
 
   if (pending.status === 'awaiting_clarification') {
-    return handleClarification(phoneNumber, user.id, message, pending, categoriesMap);
+    return handleClarification(chatId, user.id, message, pending, categoriesMap);
   }
 
   if (pending.status === 'awaiting_confirmation') {
-    return handleConfirmation(phoneNumber, user.id, message, pending, categoriesMap);
+    return handleConfirmation(chatId, user.id, message, pending, categoriesMap);
   }
 
   // Unknown state — reset
-  await clearPendingConversation(phoneNumber);
+  await clearPendingConversation(chatId);
   return 'Algo salió mal. Intentá de nuevo.';
 }
 
