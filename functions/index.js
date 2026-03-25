@@ -140,7 +140,7 @@ export const getMonthlyTotalsByCategory = onRequest({ cors: true }, async (req, 
 
 // WhatsApp bot webhook
 // Body: { phoneNumber: string, message: string }
-export const botWebhook = onRequest({ cors: true }, async (req, res) => {
+export const botWebhook = onRequest({ cors: true, secrets: ['ANTHROPIC_API_KEY'] }, async (req, res) => {
   const { phoneNumber, message } = req.body;
 
   if (!phoneNumber || !message) {
@@ -157,7 +157,7 @@ export const botWebhook = onRequest({ cors: true }, async (req, res) => {
   }
 });
 
-export const telegramWebhook = onRequest(async (req, res) => {
+export const telegramWebhook = onRequest({ secrets: ['ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN'] }, async (req, res) => {
   res.sendStatus(200);
 
   const msg = req.body.message;

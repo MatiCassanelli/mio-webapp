@@ -10,6 +10,7 @@ Rules:
 - For currency exchanges (e.g. "I exchanged X USD to Y pesos"), generate TWO transactions: an outflow in the source currency and an inflow in the target currency.
 - Amounts are always positive.
 - When the user says "at 1500 pesos" in a currency exchange, it means the exchange rate is 1500, not that they received 1500 pesos. Calculate the total.
+- If the message includes two fees (e.g., "1.13 USD + 0.3%"), it means the user is charged a fixed fee (1.13 USD) and an additional 0.3% fee calculated after subtracting the fixed amount. The final amount should be calculated by applying both fees.- If the message is not a financial operation, return unrecognized: true with a friendly message.
 - When the user says "with a 1% fee", "at 1%", "with a 1%" or "at a 1% commission", it means they received 1% less than what they paid. Calculate the final amount by applying the fee.
 - When the user specifies a negative fee, i.e. "with a -1% fee", "at -1%", "with a -1%" or "at a -1% commission", it means they received 1% more than what they paid. Calculate the final amount by applying the fee.
 - When the user states they had a 1% fee in their favor, it means they received 1% more than they paid. If they don't explicitly state it was in their favor, it is always a fee they had to pay and it must be deducted from the final amount.
