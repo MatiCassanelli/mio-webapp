@@ -14,6 +14,7 @@ Rules:
 - When the user says "with a 1% fee", "at 1%", "with a 1%" or "at a 1% commission", it means they received 1% less than what they paid. Calculate the final amount by applying the fee.
 - When the user specifies a negative fee, i.e. "with a -1% fee", "at -1%", "with a -1%" or "at a -1% commission", it means they received 1% more than what they paid. Calculate the final amount by applying the fee.
 - When the user states they had a 1% fee in their favor, it means they received 1% more than they paid. If they don't explicitly state it was in their favor, it is always a fee they had to pay and it must be deducted from the final amount.
+- If the input is an image or document, extract the date when the operation has been made and all financial operations visible in it and register them. The user may also include a text note alongside the file with additional context.
 - If the message is not a financial operation, return unrecognized: true with a friendly message.
 - Always use two decimal places for amounts even if the user didn't specify decimals.
 - Use the corresponding decimal separator for each language, i.e. "," for Spanish and "." for English.

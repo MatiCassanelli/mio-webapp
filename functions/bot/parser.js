@@ -19,9 +19,10 @@ const classifyPrompt = fs.readFileSync(path.join(__dirname, 'prompts/classify.md
 /**
  * @param {string} message - User message in free text
  * @param {Array} categories - User categories from Firestore
+ * @param {{ base64: string, mimeType: string } | null} imageData - Optional image to analyze
  * @returns {Promise<Object>} - { unrecognized, transactions, pendingQuestions }
  */
-async function parseFinancialMessage(message, categories) {
+async function parseFinancialMessage(message, categories, imageData = null) {
   const categoriesContext = categories.map((cat) => ({
     id: cat.id,
     name: cat.name,
@@ -34,13 +35,27 @@ async function parseFinancialMessage(message, categories) {
     JSON.stringify(categoriesContext, null, 2),
   );
 
+  let userContent;
+  if (imageData) {
+    const isPdf = imageData.mimeType === 'application/pdf';
+    const fileBlock = isPdf
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: imageData.base64 } }
+      : { type: 'image', source: { type: 'base64', media_type: imageData.mimeType, data: imageData.base64 } };
+    userContent = [
+      fileBlock,
+      { type: 'text', text: message || 'Analizá los movimientos financieros en este archivo y registrálos.' },
+    ];
+  } else {
+    userContent = message;
+  }
+
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5',
     max_tokens: 1024,
     system: systemPrompt,
     tools: [PARSE_TOOL],
     tool_choice: { type: 'tool', name: 'register_operation' },
-    messages: [{ role: 'user', content: message }],
+    messages: [{ role: 'user', content: userContent }],
   });
 
   const toolUse = response.content.find((b) => b.type === 'tool_use');
@@ -63,7 +78,7 @@ async function parseFinancialMessage(message, categories) {
  */
 async function classifyConfirmationIntent(message) {
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-haiku-4-5',
     max_tokens: 50,
     system: classifyPrompt,
     tools: [CLASSIFY_TOOL],

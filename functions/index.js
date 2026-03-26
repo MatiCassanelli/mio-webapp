@@ -163,18 +163,50 @@ export const telegramWebhook = onRequest({ secrets: ['ANTHROPIC_API_KEY', 'TELEG
   const msg = req.body.message;
   if (!msg) return;
 
-  const phoneNumber = String(msg.chat.id); // usás el chat_id como identificador
-  const message = msg.text;
-  console.log('Received Telegram message:', { phoneNumber, message });
-  if (!phoneNumber || !message) return;
+  const chatId = String(msg.chat.id);
+  const message = msg.text || msg.caption || null;
+
+  let imageData = null;
+  if (msg.photo) {
+    // Telegram sends multiple sizes; last one is highest resolution
+    const photo = msg.photo[msg.photo.length - 1];
+    imageData = await downloadTelegramFile(photo.file_id);
+  } else if (msg.document?.mime_type === 'application/pdf') {
+    imageData = await downloadTelegramFile(msg.document.file_id, 'application/pdf');
+  }
+
+  console.log('Received Telegram message:', { chatId, message, hasImage: !!imageData });
+
+  if (!message && !imageData) return;
 
   try {
-    const reply = await handleBotMessage(phoneNumber, message);
+    const reply = await handleBotMessage(chatId, message, imageData);
     await sendTelegramMessage(msg.chat.id, reply);
   } catch (error) {
     console.error('Bot error:', error);
   }
 });
+
+async function downloadTelegramFile(fileId, forceMimeType = null) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+  const fileJson = await fileRes.json();
+  const filePath = fileJson.result?.file_path;
+  if (!filePath) return null;
+
+  const fileUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
+  const fileResponse = await fetch(fileUrl);
+  const buffer = await fileResponse.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+
+  let mimeType = forceMimeType;
+  if (!mimeType) {
+    const ext = filePath.split('.').pop().toLowerCase();
+    mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+  }
+
+  return { base64, mimeType };
+}
 
 async function sendTelegramMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
