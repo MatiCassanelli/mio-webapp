@@ -45,9 +45,9 @@ function buildConfirmationMessage(transactions, categoriesMap) {
 /**
  * Handles a new message when there is no active conversation.
  */
-async function handleNewMessage(phoneNumber, userId, message, categoriesMap) {
+async function handleNewMessage(chatId, userId, message, categoriesMap, imageData = null) {
   const categoriesList = Object.values(categoriesMap);
-  const parsed = await parseFinancialMessage(message, categoriesList);
+  const parsed = await parseFinancialMessage(message, categoriesList, imageData);
 
   if (parsed.unrecognized) {
     return parsed.unrecognized_message || 'No entendí el mensaje. Intentá describir la operación de nuevo.';
@@ -55,7 +55,7 @@ async function handleNewMessage(phoneNumber, userId, message, categoriesMap) {
 
   const status = parsed.pendingQuestions && parsed.pendingQuestions.length > 0 ? 'awaiting_clarification' : 'awaiting_confirmation';
 
-  await savePendingConversation(phoneNumber, userId, {
+  await savePendingConversation(chatId, userId, {
     status,
     transactions: parsed.transactions,
     pendingQuestions: parsed.pendingQuestions,
@@ -140,9 +140,10 @@ async function handleConfirmation(phoneNumber, userId, message, pending, categor
  * Main bot handler. Receives a message and returns a reply string.
  * @param {string} chatId - Telegram chat ID
  * @param {string} message - Incoming message text
+ * @param {{ base64: string, mimeType: string } | null} imageData - Optional image to analyze
  * @returns {Promise<string>} - Reply to send back
  */
-async function handleBotMessage(chatId, message) {
+async function handleBotMessage(chatId, message, imageData = null) {
   const pending = await getPendingConversation(chatId);
 
   // Linking flow: user is responding with their email
@@ -166,7 +167,7 @@ async function handleBotMessage(chatId, message) {
   const categoriesMap = await getCategoriesMap();
 
   if (!pending) {
-    return handleNewMessage(chatId, user.id, message, categoriesMap);
+    return handleNewMessage(chatId, user.id, message, categoriesMap, imageData);
   }
 
   if (pending.status === 'awaiting_clarification') {
