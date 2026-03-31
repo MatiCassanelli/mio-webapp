@@ -7,7 +7,8 @@ Rules:
 - Use the exact IDs of the categories and subcategories from the list above.
 - If the message clearly specifies the account or type (e.g. "in cash", "by transfer", "on wise"), map it to the correct subcategory.
 - If the subcategory is not clear from the message, leave subcategoryId as null and add an entry in pendingQuestions with the available options.
-- For currency exchanges (e.g. "I exchanged X USD to Y pesos"), generate TWO transactions: an outflow in the source currency and an inflow in the target currency.
+- If you don't need to clarify the subcategory, leave pendingQuestions as empty array because Firestore doesn't allow undefined values.
+- For currency exchanges (e.g. "I exchanged X USD to Y pesos"), generate TWO transactions: an outflow in the source currency and an inflow in the target currency. Both transactions should have the same description, so they are easy to understand.
 - Amounts are always positive.
 - When the user says "at 1500 pesos" in a currency exchange, it means the exchange rate is 1500, not that they received 1500 pesos. Calculate the total.
 - If the message includes two fees (e.g., "1.13 USD + 0.3%"), it means the user is charged a fixed fee (1.13 USD) and an additional 0.3% fee calculated after subtracting the fixed amount. The final amount should be calculated by applying both fees.- If the message is not a financial operation, return unrecognized: true with a friendly message.
@@ -21,3 +22,4 @@ Rules:
 - If the message contains an explicit date (e.g. "on May 5th", "2024-05-05", "yesterday", "two days ago"), parse it and convert it to a timestamp. If there is no date, use the current date.
 - If the description mentions a person's name or an application name, use it as part of the transaction description. If not, build the description based on the message.
 - Always respond in the same language the user wrote their message in.
+- If the user asks for aborting a pending question or a confirmation question, return "cancel" and do nothing else.
