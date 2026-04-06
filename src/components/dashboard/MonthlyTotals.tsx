@@ -1,7 +1,17 @@
-import { Grid, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { TotalCards } from 'components/category/CategoryTotalCard';
-import { MonthlyTotalsBarChart } from './MonthlyTotalsBarChart';
-import { useContext, useEffect, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+import { TotalCards } from 'components/dashboard/TotalCards';
+import { colors } from 'theme';
 import { MonthlyTotal } from 'types/Dashboard';
 import { CategoryContext } from 'context/CategoryContext';
 import { UserContext } from 'context/UserContext';
@@ -9,18 +19,58 @@ import { getMonthlyTotalsByCategory } from 'services/dashboard';
 import { FirestoreError } from 'firebase/firestore';
 import { Loading } from 'pages/Loading';
 
-const getTotalsFromMonthlyData = (monthlyData: MonthlyTotal[]) => {
-  const totals = monthlyData.reduce(
+const MonthlyTotalsBarChart = lazy(() =>
+  import('./MonthlyTotalsBarChart').then((m) => ({
+    default: m.MonthlyTotalsBarChart,
+  })),
+);
+
+const getTotalsFromMonthlyData = (monthlyData: MonthlyTotal[]) =>
+  monthlyData.reduce(
     (acc, current) => {
       acc.incoming += current.incomingTotal;
       acc.outgoing += current.outgoingTotal;
       return acc;
     },
-    { incoming: 0, outgoing: 0 }
+    { incoming: 0, outgoing: 0 },
   );
 
-  return totals;
-};
+const EMPTY_PLACEHOLDER = (
+  <Box
+    sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 280,
+      gap: 1.5,
+      opacity: 0.6,
+    }}
+  >
+    <Box
+      sx={{
+        p: 2,
+        bgcolor: colors.surfaceContainerLow,
+        borderRadius: '50%',
+        display: 'flex',
+      }}
+    >
+      <span
+        className="material-symbols-outlined"
+        style={{ fontSize: 32, color: colors.outline, display: 'block' }}
+      >
+        bar_chart
+      </span>
+    </Box>
+    <Typography
+      sx={{ fontSize: 14, color: 'text.secondary', textAlign: 'center' }}
+    >
+      Seleccioná una categoría
+      <br />
+      para ver el desglose mensual
+    </Typography>
+  </Box>
+);
 
 export const MonthlyTotals = ({ year }: { year: number }) => {
   const { breakpoints } = useTheme();
@@ -28,28 +78,34 @@ export const MonthlyTotals = ({ year }: { year: number }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [monthlyData, setMonthlyData] = useState<MonthlyTotal[]>([]);
-  const [incomingTotal, setIncomingTotal] = useState(0);
-  const [outgoingTotal, setOutgoingTotal] = useState(0);
 
   const { user } = useContext(UserContext);
   const { selectedCategory } = useContext(CategoryContext);
+
+  const { incoming: incomingTotal, outgoing: outgoingTotal } = useMemo(
+    () =>
+      monthlyData.length
+        ? getTotalsFromMonthlyData(monthlyData)
+        : { incoming: 0, outgoing: 0 },
+    [monthlyData],
+  );
 
   useEffect(() => {
     const fetchMonthlyTotals = async () => {
       if (user?.uid && selectedCategory) {
         setLoading(true);
         try {
-          const monthlyData = await getMonthlyTotalsByCategory({
+          const data = await getMonthlyTotalsByCategory({
             userId: user.uid,
             year,
             category: selectedCategory.id,
           });
-          setMonthlyData(monthlyData);
+          setMonthlyData(data);
           setLoading(false);
         } catch (err) {
           console.error(err);
-          const error = err as FirestoreError;
-          setError(`${error.name} (${error.code}): ${error.message}`);
+          const fireErr = err as FirestoreError;
+          setError(`${fireErr.name} (${fireErr.code}): ${fireErr.message}`);
           setLoading(false);
         }
       }
@@ -57,14 +113,6 @@ export const MonthlyTotals = ({ year }: { year: number }) => {
 
     fetchMonthlyTotals();
   }, [selectedCategory, user?.uid, year]);
-
-  useEffect(() => {
-    if (monthlyData.length) {
-      const totals = getTotalsFromMonthlyData(monthlyData);
-      setIncomingTotal(totals.incoming);
-      setOutgoingTotal(totals.outgoing);
-    }
-  }, [monthlyData]);
 
   if (loading) {
     return <Loading />;
@@ -74,37 +122,36 @@ export const MonthlyTotals = ({ year }: { year: number }) => {
   }
 
   return (
-    <Grid item xs={3} container columns={3} sx={{ maxHeight: '60%' }}>
+    <Box sx={{ minWidth: 0, minHeight: 300 }}>
       {selectedCategory ? (
         <>
-          {!loading && error && (
-            <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
-          )}
-          {!loading && selectedCategory && monthlyData.length > 0 && (
-            <>
-              <Grid
-                item
-                xs={3}
-                sm={2}
-                sx={{ height: isMobileScreen ? '50%' : '100%' }}
-              >
-                <MonthlyTotalsBarChart monthlyData={monthlyData} />
-              </Grid>
-              <Grid item xs={3} sm={1}>
+          {monthlyData.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: isMobileScreen ? 'column' : 'row',
+                gap: 2,
+                height: '100%',
+              }}
+            >
+              <Box sx={{ flex: 2 }}>
+                <Suspense fallback={<Loading />}>
+                  <MonthlyTotalsBarChart monthlyData={monthlyData.slice(-12)} />
+                </Suspense>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 <TotalCards
                   incomingTotal={incomingTotal}
                   outgoingTotal={outgoingTotal}
-                  sx={{ flexDirection: 'column' }}
+                  balance={incomingTotal - outgoingTotal}
                 />
-              </Grid>
-            </>
+              </Box>
+            </Box>
           )}
         </>
       ) : (
-        <Typography>
-          Selecciona una categoria para ver los totales por mes
-        </Typography>
+        EMPTY_PLACEHOLDER
       )}
-    </Grid>
+    </Box>
   );
 };

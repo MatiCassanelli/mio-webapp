@@ -25,7 +25,7 @@ export const CategoryContext = createContext<CategoryContextProps>({
   setSelectedSubCategory: () => true,
 });
 
-const CategoryProvider = ({ children }: PropsWithChildren) => {
+export const CategoryProvider = ({ children }: PropsWithChildren) => {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category>();
@@ -76,4 +76,3 @@ const CategoryProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
-export default CategoryProvider;

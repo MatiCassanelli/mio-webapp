@@ -1,46 +1,30 @@
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Container,
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
-  Typography,
-} from '@mui/material';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Fab from '@mui/material/Fab';
 import { Transaction } from 'types/Transaction';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { Timestamp, where } from 'firebase/firestore';
 import { getTransactionsSnapshot } from 'services/transactions';
 import { UserContext } from 'context/UserContext';
 import { TransactionList } from 'components/transaction/TransactionList';
-import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
-import {
-  CategoriesTotalList,
-  TotalCards,
-} from 'components/category/CategoryTotalCard';
-import { MonthTabs } from 'components/common/MonthSelector';
+import { CurrencyTotals } from 'components/category/CurrencyTotals';
+import { CategoryFilter } from 'components/category/CategoryFilter';
+import { MonthNavigator } from 'components/common/MonthSelector';
+import { Icon } from 'components/common/Icon';
 import dayjs, { Dayjs } from 'dayjs';
-import { BuySellModal } from 'components/transaction/BuySellModal';
-import { getTotalAmount } from 'utils/getTotalAmount';
 import { Loading } from './Loading';
 import { CategoryContext } from 'context/CategoryContext';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from 'lib';
+import { colors } from 'theme';
 
 export const Transactions = () => {
   const { user } = useContext(UserContext);
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<
-    Transaction[]
-  >([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
-  const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
-  const [buySellModalOpen, setBuySellModalOpen] = useState(false);
-  const [showTotals, setShowTotals] = useState(true);
   const [month, setMonth] = useState<Dayjs>(dayjs());
   const {
     selectedCategory,
@@ -53,7 +37,6 @@ export const Transactions = () => {
     setLoading(true);
     const endOfMonth = month.endOf('month').toDate();
     const startOfMonth = month.startOf('month').toDate();
-
     const unsubscribe = getTransactionsSnapshot({
       onSuccess: (querySnapshot) => {
         const docs = querySnapshot.docs.map((x) => ({
@@ -78,141 +61,100 @@ export const Transactions = () => {
   }, [month, user?.uid]);
 
   useEffect(() => {
-    setFilteredTransactions(
-      selectedCategory
-        ? transactions.filter((x) => x.category.id === selectedCategory?.id)
-        : transactions
-    );
-  }, [selectedCategory, transactions]);
-
-  useEffect(() => {
-    if (selectedSubCategory) {
-      const filtered = transactions.filter(
-        (x) => x.category.subcategory?.id === selectedSubCategory?.id
-      );
-      setFilteredTransactions(filtered);
-    } else if (selectedCategory) {
-      setFilteredTransactions(
-        transactions.filter((x) => x.category.id === selectedCategory?.id)
-      );
-    } else {
-      setFilteredTransactions(transactions);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSubCategory, transactions]);
-
-  useEffect(() => {
-    setFilteredTransactions([]);
     setSelectedCategory(undefined);
     setSelectedSubCategory(undefined);
   }, [month, setSelectedCategory, setSelectedSubCategory]);
 
-  const actions = [
-    {
-      name: 'Crear movimiento',
-      icon: <NoteAddIcon />,
-      action: () => setNewTransactionModalOpen(true),
-    },
-    {
-      name: 'Movimiento doble',
-      icon: <SyncAltIcon />,
-      action: () => setBuySellModalOpen(true),
-    },
-  ];
-
-  const getIOTransactions = (income: boolean) => {
-    if (selectedCategory) {
-      return filteredTransactions.filter((x) => x.income === income);
+  const filteredTransactions = useMemo(() => {
+    if (selectedSubCategory) {
+      return transactions.filter(
+        (x) => x.category.subcategory?.id === selectedSubCategory.id,
+      );
     }
-    return transactions.filter(
-      (x) => x.income === income && x.category.isUsdValue
-    );
-  };
+    if (selectedCategory) {
+      return transactions.filter((x) => x.category.id === selectedCategory.id);
+    }
+    return transactions;
+  }, [transactions, selectedCategory, selectedSubCategory]);
 
   return (
-    <>
-      <Container sx={{ paddingX: 0, paddingBottom: 6, paddingTop: 1.5 }}>
-        <MonthTabs onMonthChange={(date) => setMonth(date)} />
-        {loading && <Loading />}
-        {error && (
-          <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>
-        )}
-        {!loading && !error && (
-          <>
-            <Accordion
-              expanded={showTotals}
-              onChange={() => setShowTotals(!showTotals)}
-              elevation={0}
-              sx={{
-                margin: 1,
-                '&.Mui-expanded': {
-                  margin: 1,
-                },
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls="total-panel"
-                id="total-panel"
-                sx={{
-                  minHeight: '24px',
-                  height: '24px',
-                  '&.Mui-expanded': {
-                    minHeight: '24px',
-                    height: '24px',
-                  },
-                }}
-              >
-                {showTotals ? 'Ocultar' : 'Ver'} totales
-              </AccordionSummary>
-              <AccordionDetails sx={{ padding: 0 }}>
-                <TotalCards
-                  incomingTotal={getTotalAmount(getIOTransactions(true))}
-                  outgoingTotal={getTotalAmount(getIOTransactions(false))}
-                />
-                <CategoriesTotalList transactions={transactions} />
-              </AccordionDetails>
-            </Accordion>
-            <TransactionList transactions={filteredTransactions} />
-            <SpeedDial
-              ariaLabel="Acciones para movimientos"
-              sx={{
-                position: 'fixed',
-                bottom: 16,
-                right: 16,
-                '.MuiSpeedDialAction-staticTooltip .MuiSpeedDialAction-staticTooltipLabel':
-                  { textWrap: 'nowrap' },
-              }}
-              icon={<SpeedDialIcon />}
-              onClose={() => setSpeedDialOpen(false)}
-              onOpen={() => setSpeedDialOpen(true)}
-              open={speedDialOpen}
-            >
-              {actions.map(({ name, icon, action }) => (
-                <SpeedDialAction
-                  key={name}
-                  icon={icon}
-                  tooltipTitle={name}
-                  tooltipOpen
-                  onClick={action}
-                />
-              ))}
-            </SpeedDial>
-          </>
-        )}
-      </Container>
-      {newTransactionModalOpen && (
-        <TransactionFormModal
-          open={newTransactionModalOpen}
-          onClose={() => setNewTransactionModalOpen(false)}
-        />
+    <Box
+      sx={{
+        p: { xs: 2, md: 4 },
+        pb: { xs: 10, sm: 4 },
+        maxWidth: 1280,
+        mx: 'auto',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          mb: 2,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontWeight: 800,
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Movimientos
+          </Typography>
+          <MonthNavigator onMonthChange={(date) => setMonth(date)} />
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Icon name="add" size={20} />}
+          onClick={() => navigate(ROUTES.TRANSACTIONS_SELECT)}
+          sx={{
+            background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryContainer})`,
+            borderRadius: 3,
+            px: 3,
+            py: 1.25,
+            fontWeight: 700,
+            fontSize: 14,
+            boxShadow: `0 4px 14px ${colors.primary}33`,
+            '&:hover': { boxShadow: `0 6px 20px ${colors.primary}4d` },
+            display: { xs: 'none', sm: 'flex' },
+          }}
+        >
+          Nueva Transacción
+        </Button>
+      </Box>
+
+      {loading && <Loading />}
+      {error ? (
+        <Typography sx={{ color: 'error.main', mb: 2 }}>{error}</Typography>
+      ) : null}
+
+      {!loading && !error && (
+        <>
+          <CurrencyTotals transactions={transactions} />
+          <CategoryFilter transactions={transactions} />
+          <TransactionList transactions={filteredTransactions} />
+        </>
       )}
-      {buySellModalOpen && (
-        <BuySellModal
-          open={buySellModalOpen}
-          onClose={() => setBuySellModalOpen(false)}
-        />
-      )}
-    </>
+
+      {/* FAB for mobile */}
+      <Fab
+        color="primary"
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          display: { xs: 'flex', sm: 'none' },
+          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryContainer})`,
+          boxShadow: `0 4px 14px ${colors.primary}4d`,
+        }}
+        onClick={() => navigate(ROUTES.TRANSACTIONS_SELECT)}
+      >
+        <Icon name="add" size={24} />
+      </Fab>
+    </Box>
   );
 };

@@ -13,7 +13,7 @@ export const UserContext = createContext<UserContextProps>({
   setLoading: () => {},
 });
 
-const UserProvider = ({ children }: PropsWithChildren) => {
+export const UserProvider = ({ children }: PropsWithChildren) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,4 +39,3 @@ const UserProvider = ({ children }: PropsWithChildren) => {
   );
 };
 
-export default UserProvider;

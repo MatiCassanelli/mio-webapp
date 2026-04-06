@@ -8,6 +8,7 @@ import {
   FirestoreError,
   addDoc,
   getDocs,
+  getDoc,
   doc,
   setDoc,
   deleteDoc,
@@ -42,6 +43,19 @@ export const getAllTransactions = async (
       ...(x.data() as Transaction),
       id: x.id,
     }));
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getTransaction = async (id: string): Promise<Transaction | null> => {
+  try {
+    const docRef = doc(db, collectionName, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { ...(docSnap.data() as Transaction), id: docSnap.id };
+    }
+    return null;
   } catch (error) {
     throw error;
   }

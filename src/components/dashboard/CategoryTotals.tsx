@@ -1,22 +1,23 @@
-import { Grid, Typography } from '@mui/material';
-import {
-  CategoryContainerBox,
-  CategoryTotalCard,
-  SubCategoryTotalCard,
-} from 'components/category/CategoryTotalCard';
+import { useContext, useMemo, useState, useEffect } from 'react';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 import { CategoryContext } from 'context/CategoryContext';
 import { UserContext } from 'context/UserContext';
 import { FirestoreError } from 'firebase/firestore';
 import { Loading } from 'pages/Loading';
-import { useContext, useState, useEffect } from 'react';
 import { getAllTotals } from 'services/dashboard';
 import { CategoryTotal } from 'types/Dashboard';
+import {
+  CategoryListItem,
+  SubCategoryListItem,
+} from 'components/category/CategoryListItems';
 
 export const CategoryTotals = ({ year }: { year: number }) => {
   const { user } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [categoryData, setCategoryData] = useState<CategoryTotal[]>([]);
+  const [currencyFilter, setCurrencyFilter] = useState<string>('all');
   const { categories, selectedCategory, onCategoryClick } =
     useContext(CategoryContext);
 
@@ -25,10 +26,7 @@ export const CategoryTotals = ({ year }: { year: number }) => {
       setLoading(true);
       if (user?.uid) {
         try {
-          const categoryTotals = await getAllTotals({
-            userId: user.uid,
-            year,
-          });
+          const categoryTotals = await getAllTotals({ userId: user.uid, year });
           setCategoryData(categoryTotals);
           setLoading(false);
         } catch (err) {
@@ -39,53 +37,74 @@ export const CategoryTotals = ({ year }: { year: number }) => {
         }
       }
     };
-
     fetchAllTotals();
   }, [user?.uid, year]);
 
-  if (loading) {
-    return <Loading />;
-  }
-  if (error) {
+  useEffect(() => {
+    setCurrencyFilter('all');
+  }, [year]);
+
+  const categoryDataMap = useMemo(
+    () =>
+      new Map<string, CategoryTotal>(
+        categoryData.map((x) => [x.category.id, x]),
+      ),
+    [categoryData],
+  );
+
+  const filteredCategories = useMemo(
+    () =>
+      categories?.filter((cat) => {
+        const hasTotal = categoryDataMap.get(cat.id)?.total;
+        if (!hasTotal) return false;
+        if (currencyFilter === 'all') return true;
+        return cat.currency === currencyFilter;
+      }) ?? [],
+    [categories, categoryDataMap, currencyFilter],
+  );
+
+  if (loading) return <Loading />;
+  if (error)
     return <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>;
-  }
 
   return (
-    <Grid item xs={3} sx={{ marginBottom: 4 }}>
-      <CategoryContainerBox>
-        {categories?.map((category) => {
-          const categoryTotal = categoryData?.find(
-            (x) => x.category.id === category.id
-          );
-          return categoryTotal?.total ? (
-            <CategoryTotalCard
-              key={category.id}
-              amount={categoryTotal?.total || 0}
-              category={category}
-              onCategoryClick={() => onCategoryClick(category)}
-              isSelected={selectedCategory?.id === category.id}
-            />
-          ) : null;
-        })}
-      </CategoryContainerBox>
-      <CategoryContainerBox>
-        {selectedCategory?.subcategories?.map((subCategory) => {
-          const categoryTotal = categoryData?.find(
-            (x) => x.category.id === selectedCategory.id
-          );
-          const subCategoryTotal = categoryTotal?.subcategories.find(
-            (x) => x.subcategory.id === subCategory.id
-          );
+    <Box sx={{ minWidth: 0 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {filteredCategories.map((category) => {
+          const categoryTotal = categoryDataMap.get(category.id);
+          const isSelected = selectedCategory?.id === category.id;
           return (
-            <SubCategoryTotalCard
-              key={subCategory.id}
-              amount={subCategoryTotal?.total || 0}
-              category={selectedCategory}
-              subCategory={subCategory}
-            />
+            <Box key={category.id}>
+              <CategoryListItem
+                category={category}
+                amount={categoryTotal?.total ?? 0}
+                isSelected={isSelected}
+                onClick={() => onCategoryClick(category)}
+              />
+              {isSelected &&
+                category.subcategories?.map((sub) => {
+                  const subTotal = categoryTotal?.subcategories.find(
+                    (s) => s.subcategory.id === sub.id,
+                  );
+                  return (
+                    <SubCategoryListItem
+                      key={sub.id}
+                      subCategory={sub}
+                      currency={category.currency}
+                      amount={subTotal?.total ?? 0}
+                    />
+                  );
+                })}
+            </Box>
           );
         })}
-      </CategoryContainerBox>
-    </Grid>
+
+        {filteredCategories.length === 0 && !loading ? (
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', p: 1 }}>
+            Sin datos para el período seleccionado
+          </Typography>
+        ) : null}
+      </Box>
+    </Box>
   );
 };
