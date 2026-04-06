@@ -1,43 +1,68 @@
-import { Divider, List, ListItemButton } from '@mui/material';
+import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import { Transaction } from 'types/Transaction';
 import { TransactionItem } from 'components/transaction/TransactionItem';
-import { useState } from 'react';
-import { TransactionFormModal } from 'components/transaction/TransactionFormModal';
+import { useNavigate } from 'react-router-dom';
+import { transactionEditRoute, savingEditRoute } from 'lib';
+import { colors } from 'theme';
 
-export const TransactionList = ({
-  transactions,
-  saving,
-}: {
+const EMPTY_STATE = (
+  <Box sx={{ py: 6, textAlign: 'center' }}>
+    <span
+      className="material-symbols-outlined"
+      style={{ fontSize: 40, color: colors.outlineVariant, display: 'block', marginBottom: 8 }}
+    >
+      receipt_long
+    </span>
+    <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
+      No se encontraron movimientos
+    </Typography>
+  </Box>
+);
+
+interface TransactionListProps {
   transactions: Transaction[] | undefined;
   saving?: boolean;
-}) => {
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction>();
+}
+
+export const TransactionList = ({ transactions, saving }: TransactionListProps) => {
+  const navigate = useNavigate();
+
+  if (!transactions?.length) {
+    return EMPTY_STATE;
+  }
+
+  const handleClick = (transaction: Transaction) => {
+    navigate(
+      saving
+        ? savingEditRoute(transaction.id!)
+        : transactionEditRoute(transaction.id!),
+    );
+  };
+
   return (
-    <>
-      <List>
-        {transactions?.length
-          ? transactions?.map((transaction) => (
-              <ListItemButton
-                key={transaction.id}
-                selected={transaction.id === selectedTransaction?.id}
-                onClick={() => setSelectedTransaction(transaction)}
-              >
-                <TransactionItem transaction={transaction} />
-                <Divider sx={{ marginY: 1 }} />
-              </ListItemButton>
-            ))
-          : 'No se encontraron movimientos que mostrar'}
-      </List>
-      {selectedTransaction && (
-        <TransactionFormModal
-          existingTransaction={selectedTransaction}
-          open={!!selectedTransaction}
-          saving={saving}
-          onClose={() => {
-            setSelectedTransaction(undefined);
-          }}
-        />
-      )}
-    </>
+    <Paper
+      elevation={0}
+      sx={{
+        bgcolor: colors.surfaceContainerLowest,
+        borderRadius: 3,
+        overflow: 'hidden',
+        boxShadow: '0 12px 32px -4px rgba(11,28,48,0.06)',
+      }}
+    >
+      {transactions.map((transaction, i) => (
+        <Box key={transaction.id}>
+          <TransactionItem
+            transaction={transaction}
+            onClick={() => handleClick(transaction)}
+          />
+          {i < transactions.length - 1 && (
+            <Divider sx={{ mx: { xs: 2, sm: 3 } }} />
+          )}
+        </Box>
+      ))}
+    </Paper>
   );
 };
