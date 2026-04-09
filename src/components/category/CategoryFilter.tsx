@@ -24,6 +24,18 @@ export const CategoryFilter = ({ transactions }: CategoryFilterProps) => {
     return (categories ?? []).filter((cat) => categoryIds.has(cat.id));
   }, [categories, transactions]);
 
+  const subCategoryTotals = useMemo(() => {
+    const totals: Record<string, { income: number; expense: number; currency: string }> = {};
+    transactions.forEach((t) => {
+      const subId = t.category.subcategory?.id;
+      if (!subId) return;
+      if (!totals[subId]) totals[subId] = { income: 0, expense: 0, currency: t.category.currency };
+      if (t.income) totals[subId].income += t.amount;
+      else totals[subId].expense += t.amount;
+    });
+    return totals;
+  }, [transactions]);
+
   if (!transactions.length) return null;
 
   return (
@@ -49,6 +61,7 @@ export const CategoryFilter = ({ transactions }: CategoryFilterProps) => {
           const sub = selectedCategory?.subcategories?.find((s) => s.id === id);
           if (sub) onSubCategoryClick(sub);
         }}
+        subCategoryTotals={subCategoryTotals}
       />
     </Paper>
   );
