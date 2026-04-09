@@ -1,8 +1,18 @@
 import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { Category, SubCategory } from 'types/Transaction';
 import { CategoryPill } from './CategoryPill';
 import { groupCategoriesByCurrency } from 'utils/groupCategoriesByCurrency';
+import { toLocaleAmount } from 'utils/toLocaleAmount';
+import { colors } from 'theme';
+
+export interface SubCategoryTotals {
+  income: number;
+  expense: number;
+  currency: string;
+}
 
 interface CategorySelectorProps {
   categories: Category[];
@@ -13,6 +23,7 @@ interface CategorySelectorProps {
   disabled?: boolean;
   getCategoryDisabled?: (cat: Category) => boolean;
   getSubcategoryDisabled?: (sub: SubCategory) => boolean;
+  subCategoryTotals?: Record<string, SubCategoryTotals>;
 }
 
 export const CategorySelector = ({
@@ -24,9 +35,13 @@ export const CategorySelector = ({
   disabled,
   getCategoryDisabled,
   getSubcategoryDisabled,
+  subCategoryTotals,
 }: CategorySelectorProps) => {
   const { byCurrency, currencies } = groupCategoriesByCurrency(categories);
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  const selectedSubTotals = selectedSubcategoryId
+    ? subCategoryTotals?.[selectedSubcategoryId]
+    : undefined;
 
   return (
     <Box>
@@ -34,7 +49,6 @@ export const CategorySelector = ({
         {currencies.map((currency) => (
           <Box
             sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}
-            key={currency}
           >
             {byCurrency[currency].map((cat) => (
               <CategoryPill
@@ -74,6 +88,46 @@ export const CategorySelector = ({
                 />
               ))}
             </Box>
+
+            {selectedSubTotals && (
+              <>
+                <Divider
+                  sx={{
+                    mt: 1.5,
+                    mb: 1,
+                    borderColor: alpha(selectedCategory.color, 0.15),
+                  }}
+                />
+                <Box sx={{ display: 'flex', gap: 2.5 }}>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    Ingresos
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Manrope", sans-serif',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: colors.secondary,
+                    }}
+                  >
+                    {toLocaleAmount(selectedSubTotals.income)}
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    Egresos
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: '"Manrope", sans-serif',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: colors.tertiary,
+                    }}
+                  >
+                    {toLocaleAmount(selectedSubTotals.expense)}
+                  </Typography>
+                </Box>
+              </>
+            )}
           </Box>
         )}
     </Box>
