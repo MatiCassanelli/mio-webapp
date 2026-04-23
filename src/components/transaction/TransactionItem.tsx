@@ -1,64 +1,129 @@
-import {
-  ListItem,
-  ListItemAvatar,
-  Avatar,
-  Box,
-  Typography,
-} from '@mui/material';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { Transaction } from 'types/Transaction';
 import { CategoryChip } from 'components/category/CategoryChip';
-import { Amount } from 'components/common/Amount';
+import { colors } from 'theme';
+import { toLocaleAmount } from 'utils/toLocaleAmount';
+
+interface TransactionItemProps {
+  transaction: Transaction;
+  onClick?: () => void;
+}
 
 export const TransactionItem = ({
   transaction,
-}: {
-  transaction: Transaction;
-}) => {
+  onClick,
+}: TransactionItemProps) => {
   const { amount, category, date, description, income } = transaction;
+
+  const typeStyle = income
+    ? {
+        icon: 'trending_up',
+        bgcolor: `${colors.secondary}1a`,
+        color: colors.secondary,
+      }
+    : {
+        icon: 'trending_down',
+        bgcolor: `${colors.tertiary}1a`,
+        color: colors.tertiary,
+      };
+
+  const amountColor = income ? colors.secondary : colors.tertiary;
+  const sign = income ? '+' : '-';
+
+  const formattedDate = date
+    .toDate()
+    .toLocaleString('es', { month: 'short', day: '2-digit' });
+
   return (
-    <ListItem sx={{ paddingX: 0, gap: 1 }}>
-      <ListItemAvatar>
-        <Avatar sx={{ background: 'rgba(0,0,0,0.07)', width: 48, height: 48 }}>
-          {income ? (
-            <ArrowDownwardIcon color="success" />
-          ) : (
-            <ArrowUpwardIcon color="error" />
-          )}
-        </Avatar>
-      </ListItemAvatar>
-      <Box sx={{ width: '100%' }}>
+    <Box
+      onClick={onClick}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: { xs: 1.5, sm: 2 },
+        px: { xs: 2, sm: 3 },
+        py: 1.75,
+        cursor: onClick ? 'pointer' : 'default',
+        '&:hover': { bgcolor: colors.surfaceContainerLow },
+        transition: 'background-color 0.15s',
+      }}
+    >
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          bgcolor: typeStyle.bgcolor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: typeStyle.color,
+          flexShrink: 0,
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+          {typeStyle.icon}
+        </span>
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          sx={{
+            fontFamily: '"Manrope", sans-serif',
+            fontWeight: 700,
+            fontSize: 14,
+            color: 'text.primary',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {description}
+        </Typography>
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
             gap: 1,
+            mt: 0.5,
+            flexWrap: 'wrap',
           }}
         >
-          <Box sx={{ flex: 1 }}>
-            <Typography sx={{ lineHeight: 1.25 }}>{description}</Typography>
-            <CategoryChip variant="outlined" size="small" category={category} />
-          </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Amount
-              amount={amount}
-              income={income}
-              currency={category.currency}
+          <CategoryChip category={category} />
+          {category.subcategory && (
+            <CategoryChip
+              category={{
+                ...category,
+                name: category.subcategory.name,
+                color: category.subcategory.color,
+              }}
             />
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 600, display: 'block', textAlign: 'right' }}
-            >
-              {date.toDate().toLocaleString('es', {
-                month: 'long',
-                day: '2-digit',
-              })}
-            </Typography>
-          </Box>
+          )}
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            {formattedDate}
+          </Typography>
         </Box>
       </Box>
-    </ListItem>
+
+      <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+        <Typography
+          sx={{
+            fontFamily: '"Manrope", sans-serif',
+            fontWeight: 800,
+            fontSize: 14,
+            color: amountColor,
+          }}
+        >
+          {sign}
+          {toLocaleAmount(amount)}
+        </Typography>
+        <Typography
+          sx={{ fontSize: 11, color: 'text.secondary', fontWeight: 600 }}
+        >
+          {category.currency}
+        </Typography>
+      </Box>
+    </Box>
   );
 };

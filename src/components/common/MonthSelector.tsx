@@ -1,76 +1,119 @@
-import { useEffect, useState } from 'react';
-import { Tabs, Tab, Box, MenuItem, Select } from '@mui/material';
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 import dayjs, { Dayjs } from 'dayjs';
+import { colors } from 'theme';
 
-const TABS = 3;
-
-export const MonthTabs = ({
-  onMonthChange,
-}: {
+interface MonthNavigatorProps {
   onMonthChange: (date: Dayjs) => void;
-}) => {
+}
+
+export const MonthNavigator = ({ onMonthChange }: MonthNavigatorProps) => {
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(dayjs());
-  const [months, setMonths] = useState<Dayjs[]>([]);
 
-  useEffect(() => {
-    updateMonthArray(selectedMonth);
-  }, [selectedMonth]);
-
-  const updateMonthArray = (centerMonth: Dayjs) => {
-    const newMonths: Dayjs[] = [];
-    for (let i = -TABS; i <= TABS; i++) {
-      newMonths.push(dayjs(centerMonth).add(i, 'month'));
-    }
-    setMonths(newMonths);
+  const handlePrev = () => {
+    const newMonth = selectedMonth.subtract(1, 'month');
+    setSelectedMonth(newMonth);
+    onMonthChange(newMonth);
   };
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setSelectedMonth(months[newValue]);
-    onMonthChange(months[newValue]);
+  const handleNext = () => {
+    const newMonth = selectedMonth.add(1, 'month');
+    setSelectedMonth(newMonth);
+    onMonthChange(newMonth);
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-      <Tabs
-        value={TABS}
-        onChange={handleChange}
-        variant="scrollable"
-        allowScrollButtonsMobile
-        aria-label="month selector"
+    <Box
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.25,
+        bgcolor: colors.surfaceContainerLow,
+        border: `1px solid ${colors.outlineVariant}66`,
+        borderRadius: 2,
+        px: 0.5,
+        py: 0.25,
+        mt: 1,
+      }}
+    >
+      <IconButton
+        size="small"
+        onClick={handlePrev}
         sx={{
-          '.MuiTabs-scrollButtons.Mui-disabled': {
-            opacity: 0.3,
+          color: colors.outline,
+          borderRadius: 1.5,
+          '&:hover': {
+            bgcolor: colors.surfaceContainer,
+            color: 'text.primary',
           },
         }}
       >
-        {months.map((month) => (
-          <Tab
-            key={`${month.get('M')}-${month.get('year')}`}
-            label={month.format('MMMM YYYY')}
-          />
-        ))}
-      </Tabs>
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+          chevron_left
+        </span>
+      </IconButton>
+
+      <Typography
+        sx={{
+          fontSize: 13,
+          fontWeight: 700,
+          fontFamily: '"Manrope", sans-serif',
+          textTransform: 'capitalize',
+          color: 'text.primary',
+          minWidth: 96,
+          textAlign: 'center',
+          letterSpacing: '-0.1px',
+        }}
+      >
+        {selectedMonth.format('MMMM YYYY')}
+      </Typography>
+
+      <IconButton
+        size="small"
+        onClick={handleNext}
+        sx={{
+          color: colors.outline,
+          borderRadius: 1.5,
+          '&:hover': {
+            bgcolor: colors.surfaceContainer,
+            color: 'text.primary',
+          },
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+          chevron_right
+        </span>
+      </IconButton>
     </Box>
   );
 };
 
-export const MonthSelector = ({
-  year,
-  setYear,
-}: {
+interface MonthSelectorProps {
   year: number;
   setYear: (year: number) => void;
-}) => {
+}
+
+export const MonthSelector = ({ year, setYear }: MonthSelectorProps) => {
   const currentYear = new Date().getFullYear();
   return (
     <Select
-      labelId="year"
-      id="year"
       value={year}
       onChange={(e) => setYear(e.target.value as number)}
       size="small"
+      sx={{
+        bgcolor: colors.surfaceContainerLow,
+        borderRadius: 2,
+        fontSize: 13,
+        fontWeight: 600,
+        '& fieldset': { border: 'none' },
+        minWidth: 110,
+      }}
     >
-      <MenuItem value={0}>Todos</MenuItem>
+      <MenuItem value={0}>Todos los años</MenuItem>
       <MenuItem value={currentYear}>{currentYear}</MenuItem>
       <MenuItem value={currentYear - 1}>{currentYear - 1}</MenuItem>
     </Select>
