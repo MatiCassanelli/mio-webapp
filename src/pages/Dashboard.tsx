@@ -1,200 +1,92 @@
-import { Box, Grid, Typography, useMediaQuery, useTheme } from '@mui/material';
-import {
-  CategoryTotalCard,
-  SubCategoryTotalCard,
-  TotalCards,
-} from 'components/category/CategoryTotalCard';
-import { MonthlyTotalsBarChart } from 'components/dashboard/MonthlyTotalsBarChart';
-import { UserContext } from 'context/UserContext';
-import { useContext, useEffect, useState } from 'react';
-import { getYearlyTotals } from 'services/dashboard';
-import { CategoryTotal, MonthlyTotal } from 'types/Dashboard';
-import { Loading } from './Loading';
-import { FirestoreError } from 'firebase/firestore';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import { useState } from 'react';
 import { MonthSelector } from 'components/common/MonthSelector';
-
-const getTotalsFromMonthlyData = (monthlyData: MonthlyTotal[]) => {
-  const totals = monthlyData.reduce(
-    (acc, current) => {
-      acc.incoming += current.incomingTotal;
-      acc.outgoing += current.outgoingTotal;
-      return acc;
-    },
-    { incoming: 0, outgoing: 0 }
-  );
-
-  return totals;
-};
+import { MonthlyTotals } from 'components/dashboard/MonthlyTotals';
+import { CategoryTotals } from 'components/dashboard/CategoryTotals';
+import { colors } from 'theme';
 
 export const Dashboard = () => {
-  const { breakpoints } = useTheme();
-  const isMobileScreen = useMediaQuery(breakpoints.only('xs'));
-  const { user } = useContext(UserContext);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [monthlyData, setMonthlyData] = useState<MonthlyTotal[]>([]);
-  const [categoryData, setCategoryData] = useState<CategoryTotal[]>([]);
-  const [incomingTotal, setIncomingTotal] = useState(0);
-  const [outgoingTotal, setOutgoingTotal] = useState(0);
   const [year, setYear] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryTotal>();
-
-  useEffect(() => {
-    const fetchYearlyTotals = async () => {
-      setLoading(true);
-      if (user?.uid) {
-        try {
-          const { totalsByMonthAndYear, categoryTotals } =
-            await getYearlyTotals(user.uid, year);
-          setMonthlyData(totalsByMonthAndYear);
-          setCategoryData(categoryTotals);
-          setLoading(false);
-        } catch (error) {
-          console.error(error);
-          setError((error as FirestoreError).message);
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchYearlyTotals();
-  }, [user?.uid, year]);
-
-  useEffect(() => {
-    if (monthlyData.length) {
-      const totals = getTotalsFromMonthlyData(monthlyData);
-      setIncomingTotal(totals.incoming);
-      setOutgoingTotal(totals.outgoing);
-    }
-  }, [monthlyData]);
-
-  const onCategoryClick = (category: CategoryTotal) => {
-    if (selectedCategory?.category.id === category.category.id) {
-      setSelectedCategory(undefined);
-    } else {
-      setSelectedCategory(category);
-    }
-  };
-
-  if (loading) {
-    return <Loading />;
-  }
-  if (error) {
-    return <Typography sx={{ wordWrap: 'break-word' }}>{error}</Typography>;
-  }
 
   return (
-    <Box sx={{ height: '100%' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1280, mx: 'auto' }}>
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          margin: '16px 0 8px',
+          alignItems: { xs: 'flex-start', sm: 'flex-end' },
+          flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
+          gap: 2,
+          mb: 4,
         }}
       >
-        <Typography sx={{ fontWeight: 600 }}>
-          Total de movimientos anuales (USD)
-        </Typography>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontWeight: 800,
+              letterSpacing: '-0.5px',
+            }}
+          >
+            Acumulado
+          </Typography>
+          <Typography sx={{ color: 'text.secondary', mt: 0.5, fontSize: 14 }}>
+            Total de movimientos anuales (USD)
+          </Typography>
+        </Box>
         <MonthSelector year={year} setYear={setYear} />
       </Box>
-      {!loading && !error && !monthlyData?.length ? (
-        <Typography>No se encontraron totales para este año</Typography>
-      ) : (
-        <>
-          <Grid
-            container
-            columns={3}
-            columnSpacing={2}
-            sx={{ height: '60%', paddingY: 2 }}
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '300px 1fr' },
+          gap: 3,
+          alignItems: 'start',
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            bgcolor: colors.surfaceContainerLowest,
+            borderRadius: 3,
+            p: { xs: 2, md: 2.5 },
+            boxShadow: '0 12px 32px -4px rgba(11,28,48,0.06)',
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              color: 'text.secondary',
+              mb: 2,
+            }}
           >
-            <Grid item xs={3} sm={2}>
-              <MonthlyTotalsBarChart monthlyData={monthlyData} />
-            </Grid>
-            <Grid item xs={3} sm={1}>
-              <TotalCards
-                incomingTotal={incomingTotal}
-                outgoingTotal={outgoingTotal}
-                sx={{ flexDirection: 'column' }}
-              />
-            </Grid>
-          </Grid>
-          <Box>
-            <Typography sx={{ fontWeight: 600, margin: '16px 0 8px' }}>
-              Total acumulado por categoría
-            </Typography>
-            <Box
-              sx={(theme) => ({
-                display: 'grid',
-                [theme.breakpoints.up('sm')]: {
-                  display: 'flex',
-                },
-                gap: 1,
-                padding: 0.5,
-                overflow: 'auto',
-                whiteSpace: 'nowrap',
-              })}
-            >
-              {categoryData.map((categoryTotal) => (
-                <Box key={categoryTotal.category.id}>
-                  <CategoryTotalCard
-                    amount={categoryTotal.total}
-                    category={categoryTotal.category}
-                    onCategoryClick={() => onCategoryClick(categoryTotal)}
-                  />
-                  {isMobileScreen &&
-                    selectedCategory?.category.id ===
-                      categoryTotal.category.id && (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: 1,
-                          paddingY: 0.5,
-                          paddingX: 1,
-                          overflow: 'auto',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {selectedCategory?.subcategories?.map(
-                          (subcategoryTotal) => (
-                            <SubCategoryTotalCard
-                              key={subcategoryTotal.subcategory.id}
-                              amount={subcategoryTotal.total}
-                              category={selectedCategory.category}
-                              subCategory={subcategoryTotal.subcategory}
-                            />
-                          )
-                        )}
-                      </Box>
-                    )}
-                </Box>
-              ))}
-            </Box>
-            {!isMobileScreen && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1,
-                  paddingY: 0.5,
-                  paddingX: 1,
-                  overflow: 'auto',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {selectedCategory?.subcategories?.map((subcategoryTotal) => (
-                  <SubCategoryTotalCard
-                    key={subcategoryTotal.subcategory.id}
-                    amount={subcategoryTotal.total}
-                    category={selectedCategory.category}
-                    subCategory={subcategoryTotal.subcategory}
-                  />
-                ))}
-              </Box>
-            )}
-          </Box>
-        </>
-      )}
+            Categorías
+          </Typography>
+          <CategoryTotals year={year} />
+        </Paper>
+
+        <Paper
+          elevation={0}
+          sx={{
+            bgcolor: colors.surfaceContainerLowest,
+            borderRadius: 3,
+            p: { xs: 2, md: 2.5 },
+            boxShadow: '0 12px 32px -4px rgba(11,28,48,0.06)',
+            minHeight: 380,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <MonthlyTotals year={year} />
+        </Paper>
+      </Box>
     </Box>
   );
 };

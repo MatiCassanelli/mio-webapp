@@ -1,6 +1,7 @@
-const { initializeApp } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
-const { onRequest } = require('firebase-functions/v2/https');
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { onRequest } from 'firebase-functions/v2/https';
+import { handleBotMessage } from './bot/webhook.js';
 
 initializeApp();
 
@@ -14,7 +15,8 @@ const formatDateToMMYY = (date) => {
   return `${month}-${year}`;
 };
 
-exports.getTotals = onRequest({ cors: true }, async (req, res) => {
+// Returns I/O total for all categories and the passed year
+export const getAllTotals = onRequest({ cors: true }, async (req, res) => {
   const { userId, year } = req.body.data;
   if (!userId) {
     res.status(400).send('User ID is required');
@@ -23,49 +25,20 @@ exports.getTotals = onRequest({ cors: true }, async (req, res) => {
   const filterYear = year ? parseInt(year, 10) : null;
 
   try {
-    const snapshot = await getFirestore()
+    let query = getFirestore()
       .collection('transactions')
       .where('userId', '==', userId)
       .where('saving', '==', false)
-      .orderBy('date', 'asc')
-      .get();
+      .orderBy('date', 'asc');
 
-    const transactions = snapshot.docs.map((doc) => doc.data());
-    const filteredTransactions = filterYear
-      ? transactions.filter((transaction) => {
-        const transactionYear = transaction.date.toDate().getFullYear();
-        return transactionYear === filterYear;
-      })
-      : transactions;
+    if (filterYear) {
+      query = query
+        .where('date', '>=', Timestamp.fromDate(new Date(filterYear, 0, 1)))
+        .where('date', '<', Timestamp.fromDate(new Date(filterYear + 1, 0, 1)));
+    }
 
-    const groupedByMonthAndYear = filteredTransactions.reduce(
-      (acc, transaction) => {
-        const key = formatDateToMMYY(transaction.date.toDate());
-
-        if (!acc[key]) {
-          acc[key] = { incomingTotal: 0, outgoingTotal: 0 };
-        }
-
-        if (transaction.category.id === 'usd') {
-          if (transaction.income) {
-            acc[key].incomingTotal += transaction.amount;
-          } else {
-            acc[key].outgoingTotal += transaction.amount;
-          }
-        }
-
-        return acc;
-      },
-      {},
-    );
-    const totalsByMonthAndYear = Object.keys(groupedByMonthAndYear).map(
-      (key) => ({
-        monthYear: key,
-        incomingTotal: groupedByMonthAndYear[key].incomingTotal,
-        outgoingTotal: groupedByMonthAndYear[key].outgoingTotal
-      }),
-    );
-
+    const snapshot = await query.get();
+    const filteredTransactions = snapshot.docs.map((doc) => doc.data());
 
     const categoryTotals = {};
     filteredTransactions.forEach((transaction) => {
@@ -100,9 +73,146 @@ exports.getTotals = onRequest({ cors: true }, async (req, res) => {
       }
     });
 
-    res.status(200).json({ data: { totalsByMonthAndYear, categoryTotals } });
+    res.status(200).json({ data: categoryTotals });
   } catch (error) {
     console.error('Error retrieving transactions:', error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send({ name: 'Internal Server Error', error });
   }
 });
+
+// Returns total by category for each month
+export const getMonthlyTotalsByCategory = onRequest({ cors: true }, async (req, res) => {
+  const { userId, year, category } = req.body.data;
+  if (!userId) {
+    res.status(400).send('User ID is required');
+    return;
+  }
+  const filterYear = year ? parseInt(year, 10) : null;
+
+  try {
+    let query = getFirestore()
+      .collection('transactions')
+      .where('userId', '==', userId)
+      .where('category.id', '==', category)
+      .where('saving', '==', false)
+      .orderBy('date', 'asc');
+
+    if (filterYear) {
+      query = query
+        .where('date', '>=', Timestamp.fromDate(new Date(filterYear, 0, 1)))
+        .where('date', '<', Timestamp.fromDate(new Date(filterYear + 1, 0, 1)));
+    }
+
+    const snapshot = await query.get();
+    const filteredTransactions = snapshot.docs.map((doc) => doc.data());
+
+    const groupedByMonthAndYear = filteredTransactions.reduce(
+      (acc, transaction) => {
+        const key = formatDateToMMYY(transaction.date.toDate());
+
+        if (!acc[key]) {
+          acc[key] = { incomingTotal: 0, outgoingTotal: 0 };
+        }
+
+        if (transaction.income) {
+          acc[key].incomingTotal += transaction.amount;
+        } else {
+          acc[key].outgoingTotal += transaction.amount;
+        }
+
+        return acc;
+      },
+      {},
+    );
+    const totalByMonthAndYear = Object.keys(groupedByMonthAndYear).map(
+      (key) => ({
+        monthYear: key,
+        incomingTotal: groupedByMonthAndYear[key].incomingTotal,
+        outgoingTotal: groupedByMonthAndYear[key].outgoingTotal
+      }),
+    );
+    res.status(200).json({ data: totalByMonthAndYear });
+  } catch (error) {
+    console.error('Error retrieving transactions:', error);
+    res.status(500).send({ name: 'Internal Server Error', error });
+  }
+});
+
+// WhatsApp bot webhook
+// Body: { phoneNumber: string, message: string }
+export const botWebhook = onRequest({ cors: true, secrets: ['ANTHROPIC_API_KEY'] }, async (req, res) => {
+  const { phoneNumber, message } = req.body;
+
+  if (!phoneNumber || !message) {
+    res.status(400).send('phoneNumber and message are required');
+    return;
+  }
+
+  try {
+    const reply = await handleBotMessage(phoneNumber, message);
+    res.status(200).set('Content-Type', 'text/plain').send(reply);
+  } catch (error) {
+    console.error('Bot error:', error);
+    res.status(500).send({ name: 'Internal Server Error', error });
+  }
+});
+
+export const telegramWebhook = onRequest({ secrets: ['ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN'] }, async (req, res) => {
+  res.sendStatus(200);
+
+  const msg = req.body.message;
+  if (!msg) return;
+
+  const chatId = String(msg.chat.id);
+  const message = msg.text || msg.caption || null;
+
+  let imageData = null;
+  if (msg.photo) {
+    // Telegram sends multiple sizes; last one is highest resolution
+    const photo = msg.photo[msg.photo.length - 1];
+    imageData = await downloadTelegramFile(photo.file_id);
+  } else if (msg.document?.mime_type === 'application/pdf') {
+    imageData = await downloadTelegramFile(msg.document.file_id, 'application/pdf');
+  }
+
+  console.log('Received Telegram message:', { chatId, message, hasImage: !!imageData });
+
+  if (!message && !imageData) return;
+
+  try {
+    const reply = await handleBotMessage(chatId, message, imageData);
+    await sendTelegramMessage(msg.chat.id, reply);
+  } catch (error) {
+    console.error('Bot error:', error);
+  }
+});
+
+async function downloadTelegramFile(fileId, forceMimeType = null) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const fileRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+  const fileJson = await fileRes.json();
+  const filePath = fileJson.result?.file_path;
+  if (!filePath) return null;
+
+  const fileUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
+  const fileResponse = await fetch(fileUrl);
+  const buffer = await fileResponse.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+
+  let mimeType = forceMimeType;
+  if (!mimeType) {
+    const ext = filePath.split('.').pop().toLowerCase();
+    mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+  }
+
+  return { base64, mimeType };
+}
+
+async function sendTelegramMessage(chatId, text) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+}
