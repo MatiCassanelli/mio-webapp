@@ -1,27 +1,35 @@
 const APP_PATH = '';
 
 export const ROUTES = {
-  APP: APP_PATH,
+  HOME: `${APP_PATH}/`,
   TRANSACTIONS: `${APP_PATH}/transactions`,
-  TRANSACTIONS_SELECT: `${APP_PATH}/transactions/choose`,
-  TRANSACTIONS_NEW: `${APP_PATH}/transactions/new`,
-  TRANSACTIONS_EXCHANGE: `${APP_PATH}/transactions/exchange`,
-  TRANSACTIONS_EDIT: `${APP_PATH}/transactions/:id/edit`,
   SAVINGS: `${APP_PATH}/savings`,
-  SAVINGS_NEW: `${APP_PATH}/savings/new`,
-  SAVINGS_EDIT: `${APP_PATH}/savings/:id/edit`,
+  ACCOUNTS: `${APP_PATH}/accounts`,
+  ACCOUNT_DETAIL: `${APP_PATH}/accounts/:id`,
+  CATEGORIES: `${APP_PATH}/categories`,
+  PROFILE: `${APP_PATH}/profile`,
   LOGIN: `${APP_PATH}/login`,
-  DASHBOARD: `${APP_PATH}/dashboard`,
 };
 
-export const transactionEditRoute = (id: string) =>
-  `${APP_PATH}/transactions/${id}/edit`;
+export const accountDetailRoute = (id: string) => `${APP_PATH}/accounts/${id}`;
 
-export const savingEditRoute = (id: string) =>
-  `${APP_PATH}/savings/${id}/edit`;
-
-export const PAGES = [
+/** Desktop side navigation: everything one click away, there's room for it. */
+export const DESKTOP_PAGES = [
+  { name: 'Inicio', url: ROUTES.HOME, icon: 'account_balance_wallet' },
   { name: 'Movimientos', url: ROUTES.TRANSACTIONS, icon: 'receipt_long' },
-  { name: 'Acumulado', url: ROUTES.DASHBOARD, icon: 'bar_chart' },
   { name: 'Ahorros', url: ROUTES.SAVINGS, icon: 'savings' },
+  { name: 'Cuentas', url: ROUTES.ACCOUNTS, icon: 'wallet' },
+  { name: 'Categorías', url: ROUTES.CATEGORIES, icon: 'sell' },
+];
+
+/**
+ * Mobile bottom bar: four destinations and the entry button in the middle.
+ * Accounts and Categories are configured once and barely touched again —
+ * they live in Profile.
+ */
+export const MOBILE_PAGES = [
+  { name: 'Inicio', url: ROUTES.HOME, icon: 'account_balance_wallet' },
+  { name: 'Movimientos', url: ROUTES.TRANSACTIONS, icon: 'receipt_long' },
+  { name: 'Ahorros', url: ROUTES.SAVINGS, icon: 'savings' },
+  { name: 'Perfil', url: ROUTES.PROFILE, icon: 'account_circle' },
 ];

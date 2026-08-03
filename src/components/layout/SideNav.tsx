@@ -1,175 +1,155 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from 'firestore/config';
 import { UserContext } from 'context/UserContext';
-import { PAGES } from 'lib';
-import { colors, DRAWER_WIDTH } from 'theme';
+import { useMovementSheet } from 'context/MovementSheetContext';
+import { Icon } from 'components/common/Icon';
+import { DESKTOP_PAGES, ROUTES } from 'lib';
+import { colors, DRAWER_WIDTH, tokens } from 'theme';
+import { primaryButtonSx } from 'utils/buttonStyles';
 
-interface SideNavProps {
-  readonly mobileOpen: boolean;
-  readonly onClose: () => void;
-}
+const isActive = (pathname: string, url: string) =>
+  url === ROUTES.HOME ? pathname === '/' : pathname.startsWith(url);
 
-export const SideNav = ({ mobileOpen, onClose }: SideNavProps) => {
+/** The mobile bottom bar becomes this 256px side nav. */
+export const SideNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
+  const { openMovementSheet } = useMovementSheet();
 
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
-
-  const handleNav = (path: string) => {
-    navigate(path);
-    onClose();
-  };
-
-  const drawerContent = (
-    <Box
+  return (
+    <Drawer
+      variant="permanent"
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        py: 3,
-        px: 2,
+        display: { xs: 'none', md: 'block' },
+        width: DRAWER_WIDTH,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: DRAWER_WIDTH,
+          bgcolor: 'background.paper',
+          borderRight: `1px solid ${tokens.rule}`,
+          overflowX: 'hidden',
+        },
       }}
     >
-      <Box sx={{ px: 2, mb: 5 }}>
-        <Typography
-          sx={{
-            fontFamily: '"Manrope", sans-serif',
-            fontWeight: 900,
-            fontSize: 16,
-            color: 'primary.main',
-            letterSpacing: '-0.5px',
-            lineHeight: 1.2,
-          }}
-        >
-          Mio
-        </Typography>
-        <Typography
-          sx={{
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'text.secondary',
-            opacity: 0.7,
-            mt: 0.5,
-          }}
-        >
-          Gestor de finanzas
-        </Typography>
-      </Box>
-
-      <List
+      <Box
         sx={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 0.25,
-          flexGrow: 1,
-          p: 0,
+          height: '100%',
+          py: 2.75,
+          px: 2,
         }}
       >
-        {PAGES.map((item) => {
-          const active = isActive(item.url);
-          return (
-            <ListItem key={item.url} disablePadding>
-              <ListItemButton
-                onClick={() => handleNav(item.url)}
+        <Box sx={{ px: 1 }}>
+          <Typography
+            sx={{
+              fontFamily: '"Manrope", sans-serif',
+              fontWeight: 900,
+              fontSize: 22,
+              color: 'primary.main',
+              letterSpacing: '-0.6px',
+              lineHeight: 1.1,
+            }}
+          >
+            mio
+          </Typography>
+          <Typography sx={{ fontSize: 11, color: colors.outline, mt: 0.25 }}>
+            Gestor de finanzas
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mt: 3.25 }}
+        >
+          {DESKTOP_PAGES.map((page) => {
+            const active = isActive(location.pathname, page.url);
+            return (
+              <Box
+                key={page.url}
+                onClick={() => navigate(page.url)}
                 sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  px: 1.5,
+                  py: 1.375,
                   borderRadius: 3,
-                  py: 1.5,
-                  px: 2,
-                  borderRight: active
-                    ? `4px solid ${colors.primaryContainer}`
-                    : '4px solid transparent',
+                  cursor: 'pointer',
                   bgcolor: active ? colors.surfaceContainerLow : 'transparent',
-                  color: active ? colors.primaryContainer : colors.onSurface,
-                  opacity: active ? 1 : 0.7,
-                  '&:hover': {
-                    bgcolor: colors.surfaceContainerLow,
-                    opacity: 1,
-                  },
-                  transition: 'all 0.3s',
+                  color: active ? colors.primary : colors.onSurfaceVariant,
+                  '&:hover': { bgcolor: colors.surfaceContainerLow },
+                  transition: 'background-color 0.2s',
                 }}
               >
-                <ListItemIcon
+                <Icon name={page.icon} size={20} />
+                <Typography
                   sx={{
-                    minWidth: 'unset',
-                    mr: 1.5,
-                    color: 'inherit',
-                    fontSize: 20,
+                    fontFamily: '"Manrope", sans-serif',
+                    fontWeight: 800,
+                    fontSize: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
                   }}
                 >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: 20 }}
-                  >
-                    {item.icon}
-                  </span>
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.name}
-                  slotProps={{
-                    primary: {
-                      sx: {
-                        fontSize: 11,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        fontFamily: '"Manrope", sans-serif',
-                      },
-                    },
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+                  {page.name}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
 
-      <Box sx={{ px: 1, pb: 1 }}>
+        <Button
+          variant="contained"
+          startIcon={<Icon name="add" size={18} />}
+          onClick={() => openMovementSheet()}
+          sx={{ ...primaryButtonSx({ py: 1.625, fontSize: 13 }), mt: 3.25 }}
+        >
+          Nuevo movimiento
+        </Button>
+
         <Box
           sx={{
+            mt: 'auto',
             display: 'flex',
             alignItems: 'center',
-            gap: 1.5,
-            p: 1.5,
-            bgcolor: colors.surfaceContainerLowest,
+            gap: 1.25,
+            p: 1.375,
+            border: `1px solid ${tokens.hairline}`,
             borderRadius: 3,
             boxShadow: '0 1px 4px rgba(11,28,48,0.06)',
           }}
         >
-          <Avatar
+          <Box
             sx={{
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              bgcolor: colors.surfaceContainerLow,
+              color: colors.primary,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: '"Manrope", sans-serif',
+              fontWeight: 800,
+              fontSize: 12,
               flexShrink: 0,
-              bgcolor: 'primary.main',
-              fontSize: 14,
             }}
           >
             {user?.email?.[0]?.toUpperCase() ?? 'U'}
-          </Avatar>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'text.primary',
+                fontSize: 12,
+                fontWeight: 600,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -177,60 +157,20 @@ export const SideNav = ({ mobileOpen, onClose }: SideNavProps) => {
             >
               {user?.email ?? ''}
             </Typography>
+            <Typography sx={{ fontSize: 10, color: colors.outline }}>
+              Cerrar sesión
+            </Typography>
           </Box>
           <IconButton
             size="small"
             onClick={() => signOut(auth)}
-            sx={{ color: 'text.secondary', flexShrink: 0 }}
+            sx={{ color: colors.outline, flexShrink: 0 }}
             title="Cerrar sesión"
           >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: 18 }}
-            >
-              logout
-            </span>
+            <Icon name="logout" size={18} />
           </IconButton>
         </Box>
       </Box>
-    </Box>
-  );
-
-  return (
-    <>
-      {/* Desktop: permanent drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            bgcolor: 'background.default',
-            overflowX: 'hidden',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-
-      {/* Mobile: temporary drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={onClose}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            bgcolor: 'background.default',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-    </>
+    </Drawer>
   );
 };

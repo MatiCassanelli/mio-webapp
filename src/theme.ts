@@ -47,6 +47,31 @@ export const colors = {
   inversePrimary: '#b5c4ff',
 };
 
+/**
+ * Tokens that repeat across every screen of the redesign. They live here
+ * instead of scattered in each component so Account cards, movement rows,
+ * and sheets literally share the same shadow and the same radius.
+ */
+export const tokens = {
+  /** Hero card: open account, sheet, detail panel. */
+  cardShadow: '0 12px 32px -4px rgba(11,28,48,0.06)',
+  /** Secondary card: list row, closed account. */
+  rowShadow: '0 4px 12px rgba(11,28,48,0.04)',
+  sheetShadow: '0 -20px 50px rgba(11,28,48,0.12)',
+  cardRadius: { xs: '20px', md: '24px' },
+  /** "Open / selected" marker, always on the left. */
+  openMarker: `3px solid #003fb1`,
+  hairline: '#c3c5d74d',
+  rule: '#c3c5d766',
+};
+
+/** Validated color semantics: green for income, red for expense, blue for action. */
+export const amountColor = (amount: number, neutral = colors.outlineVariant) => {
+  if (amount > 0) return colors.secondary;
+  if (amount < 0) return colors.tertiary;
+  return neutral;
+};
+
 export const theme = createTheme({
   palette: {
     primary: {

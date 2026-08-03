@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /** Reference table: 6 currencies, seeded once. Any signed-in user can
+     * read and adjust `usdRate`; nobody creates or deletes from the client. */
+    match /currencies/{code} {
+      allow read: if request.auth != null;
+      allow update: if request.auth != null;
+      allow create, delete: if false;
+    }
+
+    /** Shared base Accounts (no `userId`) are readable by any signed-in user
+     * but read-only for everyone — only the Admin SDK seed script writes
+     * them. Ones created through the app always carry their creator's
+     * `userId` and are writable only by that creator. */
+    match /accounts/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    /** Same shared-base-read-only-plus-private-own model as `accounts`. */
+    match /categories/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+    }
+
+    /** Fully private: only the owner ever reads or writes their own movements. */
+    match /transactions/{id} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    /** Backup of the pre-migration `categories` docs, written once by
+     * `seed.mjs` via the Admin SDK. No client ever reads or writes it. */
+    match /legacyCategories/{id} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

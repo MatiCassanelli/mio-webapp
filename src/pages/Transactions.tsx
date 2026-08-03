@@ -1,160 +1,223 @@
+import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Fab from '@mui/material/Fab';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+import dayjs from 'dayjs';
+import { useData } from 'context/DataContext';
+import { useMovementSheet } from 'context/MovementSheetContext';
+import { useAccountTotals } from 'hooks/useAccountTotals';
+import { PageHeader, TotalHeadline } from 'components/common/PageHeader';
+import { PeriodSelector } from 'components/common/PeriodSelector';
+import { TransactionFilters } from 'components/transaction/TransactionFilters';
+import { TransactionsByDay } from 'components/transaction/TransactionsByDay';
+import { TransactionDetail } from 'components/transaction/TransactionDetail';
+import { EmptyState } from 'components/common/EmptyState';
+import { Loading } from 'pages/Loading';
 import { Transaction } from 'types/Transaction';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { Timestamp, where } from 'firebase/firestore';
-import { getTransactionsSnapshot } from 'services/transactions';
-import { UserContext } from 'context/UserContext';
-import { TransactionList } from 'components/transaction/TransactionList';
-import { CurrencyTotals } from 'components/category/CurrencyTotals';
-import { CategoryFilter } from 'components/category/CategoryFilter';
-import { MonthNavigator } from 'components/common/MonthSelector';
-import { Icon } from 'components/common/Icon';
-import dayjs, { Dayjs } from 'dayjs';
-import { Loading } from './Loading';
-import { CategoryContext } from 'context/CategoryContext';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from 'lib';
-import { colors } from 'theme';
+import { USD_CODE } from 'types/Currency';
+import { formatAmount } from 'utils/money';
+import { ALL_TIME, inPeriod, monthPeriod, Period } from 'utils/period';
+import { colors, tokens } from 'theme';
 
+/**
+ * All accounts, by day. On mobile the row expands; on desktop it gets
+ * selected and the detail lives in the right-hand panel, without moving
+ * the list.
+ */
 export const Transactions = () => {
-  const { user } = useContext(UserContext);
-  const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [month, setMonth] = useState<Dayjs>(dayjs());
-  const {
-    selectedCategory,
-    selectedSubCategory,
-    setSelectedCategory,
-    setSelectedSubCategory,
-  } = useContext(CategoryContext);
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const { loading, transactions, currenciesByCode } = useData();
+  const { openMovementSheet } = useMovementSheet();
+  const { totalUsd, trend, byAccount } = useAccountTotals(ALL_TIME);
 
-  useEffect(() => {
-    setLoading(true);
-    const endOfMonth = month.endOf('month').toDate();
-    const startOfMonth = month.startOf('month').toDate();
-    const unsubscribe = getTransactionsSnapshot({
-      onSuccess: (querySnapshot) => {
-        const docs = querySnapshot.docs.map((x) => ({
-          ...(x.data() as Transaction),
-          id: x.id,
-        }));
-        setTransactions(docs);
-        setLoading(false);
-      },
-      onError: (error) => {
-        setError(error.message);
-        setLoading(false);
-      },
-      filters: [
-        where('userId', '==', user?.uid),
-        where('saving', '==', false),
-        where('date', '<=', Timestamp.fromDate(endOfMonth)),
-        where('date', '>=', Timestamp.fromDate(startOfMonth)),
-      ],
-    });
-    return () => unsubscribe();
-  }, [month, user?.uid]);
+  const [period, setPeriod] = useState<Period>(() => monthPeriod(dayjs()));
+  const [accountId, setAccountId] = useState<string>();
+  const [categoryId, setCategoryId] = useState<string>();
+  const [selectedId, setSelectedId] = useState<string>();
 
-  useEffect(() => {
-    setSelectedCategory(undefined);
-    setSelectedSubCategory(undefined);
-  }, [month, setSelectedCategory, setSelectedSubCategory]);
+  const visible = useMemo(
+    () =>
+      transactions.filter(
+        (transaction) =>
+          !transaction.saving &&
+          inPeriod(transaction, period) &&
+          (!accountId || transaction.account?.id === accountId) &&
+          (!categoryId || transaction.category?.id === categoryId),
+      ),
+    [transactions, period, accountId, categoryId],
+  );
 
-  const filteredTransactions = useMemo(() => {
-    if (selectedSubCategory) {
-      return transactions.filter(
-        (x) => x.category.subcategory?.id === selectedSubCategory.id,
-      );
-    }
-    if (selectedCategory) {
-      return transactions.filter((x) => x.category.id === selectedCategory.id);
-    }
-    return transactions;
-  }, [transactions, selectedCategory, selectedSubCategory]);
+  const selected = visible.find((t) => t.id === selectedId);
+  // A transfer is two documents but a single event: it's counted by the leg
+  // going out, and doesn't factor into the transaction count.
+  const movementCount = visible.filter((t) => t.type !== 'transfer').length;
+  const transferCount = visible.filter(
+    (t) => t.type === 'transfer' && t.transfer?.direction === 'out',
+  ).length;
+
+  const detailFor = (transaction: Transaction) => (
+    <TransactionDetail
+      transaction={transaction}
+      currency={currenciesByCode[transaction.account?.currencyCode]}
+      accountBalance={byAccount[transaction.account?.id]?.balance}
+      onEdit={() => openMovementSheet({ transaction })}
+      onDeleted={() => setSelectedId(undefined)}
+    />
+  );
+
+  if (loading) return <Loading />;
 
   return (
-    <Box
-      sx={{
-        p: { xs: 2, md: 4 },
-        pb: { xs: 10, sm: 4 },
-        maxWidth: 1280,
-        mx: 'auto',
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          mb: 2,
-        }}
-      >
-        <Box>
+    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1180, mx: 'auto', width: '100%' }}>
+      <PageHeader
+        title="Movimientos"
+        headline={
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            <TotalHeadline
+              amount={formatAmount(totalUsd)}
+              code={USD_CODE}
+              trend={period.isAll ? null : trend}
+            />
+          </Box>
+        }
+        subtitle={
           <Typography
-            variant="h4"
             sx={{
-              fontFamily: '"Manrope", sans-serif',
-              fontWeight: 800,
-              letterSpacing: '-0.5px',
+              fontSize: 12,
+              color: colors.outline,
+              mt: 0.5,
+              display: { xs: 'none', md: 'block' },
             }}
           >
-            Movimientos
+            {movementCount} movimientos en {period.label.toLowerCase()}
+            {transferCount > 0 &&
+              ` · ${transferCount} ${transferCount === 1 ? 'transferencia' : 'transferencias'}`}
           </Typography>
-          <MonthNavigator onMonthChange={(date) => setMonth(date)} />
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Icon name="add" size={20} />}
-          onClick={() => navigate(ROUTES.TRANSACTIONS_SELECT)}
-          sx={{
-            background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryContainer})`,
-            borderRadius: 3,
-            px: 3,
-            py: 1.25,
-            fontWeight: 700,
-            fontSize: 14,
-            boxShadow: `0 4px 14px ${colors.primary}33`,
-            '&:hover': { boxShadow: `0 6px 20px ${colors.primary}4d` },
-            display: { xs: 'none', sm: 'flex' },
-          }}
-        >
-          Nueva Transacción
-        </Button>
+        }
+        action={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+              <TransactionFilters
+                accountId={accountId}
+                onAccountChange={setAccountId}
+                categoryId={categoryId}
+                onCategoryChange={setCategoryId}
+              />
+            </Box>
+            <PeriodSelector
+              period={period}
+              onChange={setPeriod}
+              transactionCount={transactions.length}
+            />
+          </Box>
+        }
+      />
+
+      <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 1.5 }}>
+        <TransactionFilters
+          accountId={accountId}
+          onAccountChange={setAccountId}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+        />
       </Box>
 
-      {loading && <Loading />}
-      {error ? (
-        <Typography sx={{ color: 'error.main', mb: 2 }}>{error}</Typography>
-      ) : null}
+      {!visible.length ? (
+        <EmptyState
+          icon="receipt_long"
+          title="No hay movimientos en este período"
+          description="Probá con otro período o sacá los filtros."
+        />
+      ) : (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: selected ? '1fr 300px' : '1fr',
+            },
+            gap: 2.5,
+            alignItems: 'start',
+          }}
+        >
+          <TransactionsByDay
+            transactions={visible}
+            showAccount={!accountId}
+            selectedId={selectedId}
+            onSelect={(transaction) =>
+              setSelectedId((current) =>
+                current === transaction.id ? undefined : transaction.id,
+              )
+            }
+            renderDetail={isDesktop ? undefined : detailFor}
+          />
 
-      {!loading && !error && (
-        <>
-          <CurrencyTotals transactions={transactions} />
-          <CategoryFilter transactions={transactions} />
-          <TransactionList transactions={filteredTransactions} />
-        </>
+          {isDesktop && selected && (
+            <Box
+              sx={{
+                bgcolor: 'background.paper',
+                borderRadius: tokens.cardRadius,
+                p: 2.5,
+                boxShadow: tokens.cardShadow,
+                position: 'sticky',
+                top: 24,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 1.75,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    color: colors.onSurfaceVariant,
+                  }}
+                >
+                  Movimiento seleccionado
+                </Typography>
+              </Box>
+              <Typography sx={{ fontSize: 17, fontWeight: 600 }}>
+                {selected.description}
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: '"Manrope", sans-serif',
+                  fontWeight: 800,
+                  fontSize: 30,
+                  letterSpacing: '-0.8px',
+                  mt: 0.375,
+                  mb: 1.75,
+                  fontVariantNumeric: 'tabular-nums',
+                  color:
+                    selected.type === 'transfer'
+                      ? colors.primary
+                      : selected.type === 'income'
+                        ? colors.secondary
+                        : colors.tertiary,
+                }}
+              >
+                {selected.type === 'expense' ? '-' : selected.type === 'income' ? '+' : ''}
+                {formatAmount(
+                  selected.amount,
+                  currenciesByCode[selected.account?.currencyCode],
+                )}
+              </Typography>
+              <Box sx={{ pt: 1.75, borderTop: `1px solid ${tokens.hairline}` }}>
+                {detailFor(selected)}
+              </Box>
+            </Box>
+          )}
+        </Box>
       )}
-
-      {/* FAB for mobile */}
-      <Fab
-        color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          display: { xs: 'flex', sm: 'none' },
-          background: `linear-gradient(135deg, ${colors.primary}, ${colors.primaryContainer})`,
-          boxShadow: `0 4px 14px ${colors.primary}4d`,
-        }}
-        onClick={() => navigate(ROUTES.TRANSACTIONS_SELECT)}
-      >
-        <Icon name="add" size={24} />
-      </Fab>
     </Box>
   );
 };

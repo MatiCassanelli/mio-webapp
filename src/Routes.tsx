@@ -1,111 +1,53 @@
 import { Navigate, Route, Routes as RoutesDom } from 'react-router-dom';
-import { Transactions } from 'pages/Transactions';
-import { Login } from 'pages/Login';
 import { ReactElement, useContext } from 'react';
 import { UserContext } from 'context/UserContext';
-import { Dashboard } from 'pages/Dashboard';
-import { ROUTES } from 'lib';
-import { Savings } from 'pages/Savings';
-import { SelectTransaction } from 'pages/SelectTransaction';
-import { RegisterMovement } from 'pages/RegisterMovement';
-import { CurrencyExchange } from 'pages/CurrencyExchange';
-import { EditMovement } from 'pages/EditMovement';
+import { DataProvider } from 'context/DataContext';
+import { MovementSheetProvider } from 'context/MovementSheetContext';
 import { AppLayout } from 'components/layout/AppLayout';
+import { Home } from 'pages/Home';
+import { Transactions } from 'pages/Transactions';
+import { AccountDetail } from 'pages/AccountDetail';
+import { Savings } from 'pages/Savings';
+import { AccountsAdmin } from 'pages/AccountsAdmin';
+import { CategoriesAdmin } from 'pages/CategoriesAdmin';
+import { Profile } from 'pages/Profile';
+import { Login } from 'pages/Login';
+import { ROUTES } from 'lib';
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
   const { user } = useContext(UserContext);
 
-  if (user) {
-    return <AppLayout>{children}</AppLayout>;
-  }
+  if (!user) return <Navigate to={ROUTES.LOGIN} />;
 
-  return <Navigate to={ROUTES.LOGIN} />;
-};
-
-export const Routes = () => {
   return (
-    <RoutesDom>
-      <Route
-        path={ROUTES.APP}
-        element={
-          <PrivateRoute>
-            <Transactions />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TRANSACTIONS}
-        element={
-          <PrivateRoute>
-            <Transactions />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.SAVINGS}
-        element={
-          <PrivateRoute>
-            <Savings />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.DASHBOARD}
-        element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TRANSACTIONS_SELECT}
-        element={
-          <PrivateRoute>
-            <SelectTransaction />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TRANSACTIONS_NEW}
-        element={
-          <PrivateRoute>
-            <RegisterMovement />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TRANSACTIONS_EXCHANGE}
-        element={
-          <PrivateRoute>
-            <CurrencyExchange />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.TRANSACTIONS_EDIT}
-        element={
-          <PrivateRoute>
-            <EditMovement />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.SAVINGS_NEW}
-        element={
-          <PrivateRoute>
-            <RegisterMovement saving />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path={ROUTES.SAVINGS_EDIT}
-        element={
-          <PrivateRoute>
-            <EditMovement saving />
-          </PrivateRoute>
-        }
-      />
-      <Route path={ROUTES.LOGIN} element={<Login />} />
-    </RoutesDom>
+    <DataProvider>
+      <MovementSheetProvider>
+        <AppLayout>{children}</AppLayout>
+      </MovementSheetProvider>
+    </DataProvider>
   );
 };
+
+const routes: { path: string; element: ReactElement }[] = [
+  { path: ROUTES.HOME, element: <Home /> },
+  { path: ROUTES.TRANSACTIONS, element: <Transactions /> },
+  { path: ROUTES.SAVINGS, element: <Savings /> },
+  { path: ROUTES.ACCOUNTS, element: <AccountsAdmin /> },
+  { path: ROUTES.ACCOUNT_DETAIL, element: <AccountDetail /> },
+  { path: ROUTES.CATEGORIES, element: <CategoriesAdmin /> },
+  { path: ROUTES.PROFILE, element: <Profile /> },
+];
+
+export const Routes = () => (
+  <RoutesDom>
+    {routes.map(({ path, element }) => (
+      <Route
+        key={path}
+        path={path}
+        element={<PrivateRoute>{element}</PrivateRoute>}
+      />
+    ))}
+    <Route path={ROUTES.LOGIN} element={<Login />} />
+    <Route path="*" element={<Navigate to={ROUTES.HOME} />} />
+  </RoutesDom>
+);

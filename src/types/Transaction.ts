@@ -1,37 +1,43 @@
 import { Timestamp } from 'firebase/firestore';
+import { AccountRef } from './Account';
+import { CategoryRef } from './Category';
 
-export interface SubCategory {
-  name: string;
-  color: string;
-  id: string;
-}
-export interface Category {
-  name: string;
-  color: string;
-  currency: string;
-  currencyCode: string;
-  id: string;
-  isUsdValue: boolean;
-  subcategory?: SubCategory;
-  subcategories?: SubCategory[];
-}
+export type TransactionType = 'income' | 'expense' | 'transfer';
 
-export const emptyCategory: Category = {
-  name: '',
-  color: '',
-  currency: '$',
-  currencyCode: '',
-  id: '',
-  isUsdValue: false,
-};
+/** The two legs of a transfer: the outgoing one and the incoming one. */
+export interface TransferLeg {
+  direction: 'in' | 'out';
+  counterpartAccount: AccountRef;
+}
 
 export interface Transaction {
-  income: boolean;
-  category: Category;
-  amount: number;
-  date: Timestamp;
-  description: string;
   id?: string;
   userId?: string;
-  saving?: boolean;
+  /** Always positive. The sign comes from `type`. */
+  amount: number;
+  description: string;
+  date: Timestamp;
+  type: TransactionType;
+  /** Attribute of the movement, not of the Account: any account can hold savings. */
+  saving: boolean;
+  account: AccountRef;
+  /** Optional: transfers don't carry a Category, and neither does the migrated history. */
+  category?: CategoryRef;
+  transfer?: TransferLeg;
+  linkedTransactionId?: string;
+  schemaVersion?: number;
 }
+
+export const SCHEMA_VERSION = 2;
+
+/** How much this movement adds to or subtracts from its Account's balance. */
+export const signedAmount = (transaction: Transaction): number => {
+  if (transaction.type === 'income') return transaction.amount;
+  if (transaction.type === 'expense') return -transaction.amount;
+  return transaction.transfer?.direction === 'in'
+    ? transaction.amount
+    : -transaction.amount;
+};
+
+export const isTransfer = (transaction: Transaction) =>
+  transaction.type === 'transfer';

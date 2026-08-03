@@ -4,7 +4,7 @@
  *
  * Conversation states:
  *   (none)                  → parse message with Claude
- *   awaiting_clarification  → resolve pending subcategory questions
+ *   awaiting_clarification  → resolve pending account questions
  *   awaiting_confirmation   → user confirms or cancels the operation
  *
  * Expected request body: { phoneNumber: string, message: string }
@@ -12,42 +12,48 @@
 
 import { parseFinancialMessage, classifyConfirmationIntent } from './parser.js';
 import { getPendingConversation, savePendingConversation, clearPendingConversation } from './conversation.js';
-import { getUserByTelegramId, linkTelegramUser, getCategoriesMap, writeTransactions, buildBalanceSummary } from './transactions.js';
+import { getUserByTelegramId, linkTelegramUser, getAccountsMap, writeTransactions, buildBalanceSummary } from './transactions.js';
 import { toLocaleAmount } from './utils.js';
 
 /**
  * Formats a parsed transaction for display in a confirmation message.
+ * Transfers read as a move between two accounts, never as income or expense.
  * @param {Object} t - Parsed transaction
- * @param {Object} categoriesMap
+ * @param {Object} accountsMap
+ * @param {Array} all - Every parsed transaction, to find the other leg of a transfer
  * @returns {string}
  */
-function formatTransaction(t, categoriesMap) {
-  const category = categoriesMap[t.categoryId];
-  const subcategory = t.subcategoryId
-    ? (category?.subcategories || []).find((s) => s.id === t.subcategoryId)
-    : null;
-
-  const label = subcategory ? `${category.name} ${subcategory.name}` : category?.name || t.categoryId;
-  const sign = t.income ? '+' : '-';
+function formatTransaction(t, accountsMap, all) {
+  const account = accountsMap[t.accountId];
   const amount = toLocaleAmount(t.amount);
-  const currency = category?.currencyCode || '';
+  const currency = account?.currencyCode || '';
+  const label = account?.name || t.accountId;
+
+  if (t.type === 'transfer_out' || t.type === 'transfer_in') {
+    const counterpart = all.find((other) => other !== t && other.transferGroup === t.transferGroup);
+    const otherName = accountsMap[counterpart?.accountId]?.name || 'otra cuenta';
+    const arrow = t.type === 'transfer_out' ? `${label} → ${otherName}` : `${otherName} → ${label}`;
+    return `  ${amount} ${currency} (${arrow})`;
+  }
+
+  const sign = t.type === 'income' ? '+' : '-';
   return `  ${sign}${amount} ${currency} (${label})`;
 }
 
 /**
  * Builds the confirmation summary message.
  */
-function buildConfirmationMessage(transactions, categoriesMap) {
-  const lines = transactions.map((t) => formatTransaction(t, categoriesMap));
+function buildConfirmationMessage(transactions, accountsMap) {
+  const lines = transactions.map((t) => formatTransaction(t, accountsMap, transactions));
   return `Entendí:\n${lines.join('\n')}\n\n¿Confirmo? (sí / no)`;
 }
 
 /**
  * Handles a new message when there is no active conversation.
  */
-async function handleNewMessage(chatId, userId, message, categoriesMap, imageData = null) {
-  const categoriesList = Object.values(categoriesMap);
-  const parsed = await parseFinancialMessage(message, categoriesList, imageData);
+async function handleNewMessage(chatId, userId, message, accountsMap, imageData = null) {
+  const accountsList = Object.values(accountsMap);
+  const parsed = await parseFinancialMessage(message, accountsList, imageData);
 
   if (parsed.unrecognized) {
     return parsed.unrecognized_message || 'No entendí el mensaje. Intentá describir la operación de nuevo.';
@@ -65,14 +71,14 @@ async function handleNewMessage(chatId, userId, message, categoriesMap, imageDat
     return parsed.pendingQuestions[0].question;
   }
 
-  return buildConfirmationMessage(parsed.transactions, categoriesMap);
+  return buildConfirmationMessage(parsed.transactions, accountsMap);
 }
 
 /**
  * Handles a user reply when there are pending clarification questions.
  * Tries to match the reply to one of the available options.
  */
-async function handleClarification(phoneNumber, userId, message, pending, categoriesMap) {
+async function handleClarification(phoneNumber, userId, message, pending, accountsMap) {
   const [currentQuestion, ...remainingQuestions] = pending.pendingQuestions;
   const normalizedReply = message.trim().toLowerCase();
 
@@ -108,13 +114,13 @@ async function handleClarification(phoneNumber, userId, message, pending, catego
     return remainingQuestions[0].question;
   }
 
-  return buildConfirmationMessage(updatedTransactions, categoriesMap);
+  return buildConfirmationMessage(updatedTransactions, accountsMap);
 }
 
 /**
  * Handles a user reply when waiting for confirmation (yes/no).
  */
-async function handleConfirmation(phoneNumber, userId, message, pending, categoriesMap) {
+async function handleConfirmation(phoneNumber, userId, message, pending, accountsMap) {
   const intent = await classifyConfirmationIntent(message);
 
   if (intent === 'cancel') {
@@ -123,17 +129,17 @@ async function handleConfirmation(phoneNumber, userId, message, pending, categor
   }
 
   if (intent === 'unclear') {
-    return buildConfirmationMessage(pending.transactions, categoriesMap) + '\n\nRespondé *sí* para confirmar o *no* para cancelar.';
+    return buildConfirmationMessage(pending.transactions, accountsMap) + '\n\nRespondé *sí* para confirmar o *no* para cancelar.';
   }
 
   // Write transactions to Firestore
-  await writeTransactions(userId, pending.transactions, categoriesMap);
+  await writeTransactions(userId, pending.transactions, accountsMap);
   await clearPendingConversation(phoneNumber);
 
-  // Build balance summary for affected subcategories
-  const balanceSummary = await buildBalanceSummary(userId, pending.transactions, categoriesMap);
+  // Build balance summary for the affected accounts
+  const balanceSummary = await buildBalanceSummary(userId, pending.transactions, accountsMap);
 
-  return `✅ Operación registrada.\n\nBalance actualizado:\n${balanceSummary}`;
+  return `✅ Operación registrada.\n\nSaldo actualizado:\n${balanceSummary}`;
 }
 
 /**
@@ -164,18 +170,18 @@ async function handleBotMessage(chatId, message, imageData = null) {
     return '¡Hola! Para empezar, necesito vincular tu cuenta. ¿Cuál es el email con el que te registraste en la app?';
   }
 
-  const categoriesMap = await getCategoriesMap();
+  const accountsMap = await getAccountsMap(user.id);
 
   if (!pending) {
-    return handleNewMessage(chatId, user.id, message, categoriesMap, imageData);
+    return handleNewMessage(chatId, user.id, message, accountsMap, imageData);
   }
 
   if (pending.status === 'awaiting_clarification') {
-    return handleClarification(chatId, user.id, message, pending, categoriesMap);
+    return handleClarification(chatId, user.id, message, pending, accountsMap);
   }
 
   if (pending.status === 'awaiting_confirmation') {
-    return handleConfirmation(chatId, user.id, message, pending, categoriesMap);
+    return handleConfirmation(chatId, user.id, message, pending, accountsMap);
   }
 
   // Unknown state — reset

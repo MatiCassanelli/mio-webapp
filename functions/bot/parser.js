@@ -18,21 +18,21 @@ const classifyPrompt = fs.readFileSync(path.join(__dirname, 'prompts/classify.md
 
 /**
  * @param {string} message - User message in free text
- * @param {Array} categories - User categories from Firestore
+ * @param {Array} accounts - User accounts from Firestore
  * @param {{ base64: string, mimeType: string } | null} imageData - Optional image to analyze
  * @returns {Promise<Object>} - { unrecognized, transactions, pendingQuestions }
  */
-async function parseFinancialMessage(message, categories, imageData = null) {
-  const categoriesContext = categories.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    currencyCode: cat.currencyCode,
-    subcategories: (cat.subcategories || []).map((sub) => ({ id: sub.id, name: sub.name })),
+async function parseFinancialMessage(message, accounts, imageData = null) {
+  const accountsContext = accounts.map((account) => ({
+    id: account.id,
+    name: account.name,
+    currencyCode: account.currencyCode,
+    type: account.type,
   }));
 
   const systemPrompt = parserPromptTemplate.replace(
-    '{{CATEGORIES}}',
-    JSON.stringify(categoriesContext, null, 2),
+    '{{ACCOUNTS}}',
+    JSON.stringify(accountsContext, null, 2),
   );
 
   let userContent;

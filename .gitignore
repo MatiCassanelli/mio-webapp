@@ -25,6 +25,9 @@ yarn-error.log*
 .env
 .firebase
 firebase-debug.log
+firestore-debug.log
 ui-debug.log
 
 .claude
+# snapshot local del emulador
+scripts/.snapshot.json

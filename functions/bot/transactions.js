@@ -1,12 +1,14 @@
 /**
  * transactions.js
  * Handles reading user data, writing transactions to Firestore,
- * and querying subcategory balances (Option A: targeted query).
+ * and querying account balances (Option A: targeted query).
  */
 
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { toLocaleAmount } from './utils.js';
+
+const SCHEMA_VERSION = 2;
 
 /**
  * Finds a user by their phone number.
@@ -63,128 +65,166 @@ async function linkTelegramUser(email, chatId) {
 }
 
 /**
- * Fetches all categories, indexed by ID for fast lookup.
- * Categories are global (not per-user).
- * @returns {Promise<Object>} - { [categoryId]: categoryData }
+ * Fetches all non-archived accounts visible to `userId` — shared base accounts
+ * (no `userId` field) plus this user's own — indexed by ID for fast lookup.
+ * @param {string} userId
+ * @returns {Promise<Object>} - { [accountId]: accountData }
  */
-async function getCategoriesMap() {
+async function getAccountsMap(userId) {
   const db = getFirestore();
-  const snapshot = await db.collection('categories').get();
+  const snapshot = await db.collection('accounts').get();
 
   const map = {};
   snapshot.docs.forEach((doc) => {
-    map[doc.id] = { id: doc.id, ...doc.data() };
+    const data = doc.data();
+    if (data.archived) return;
+    if (data.userId && data.userId !== userId) return;
+    map[doc.id] = { id: doc.id, ...data };
   });
   return map;
 }
 
 /**
- * Fetches all categories as an array (for passing to the Claude parser as context).
+ * Fetches all accounts as an array (for passing to the Claude parser as context).
+ * @param {string} userId
  * @returns {Promise<Array>}
  */
-async function getCategoriesList() {
-  const db = getFirestore();
-  const snapshot = await db.collection('categories').get();
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+async function getAccountsList(userId) {
+  return Object.values(await getAccountsMap(userId));
+}
+
+/** The snapshot embedded into every transaction. Mirrors `accountRef` in the webapp. */
+function accountRef(account) {
+  return {
+    id: account.id,
+    name: account.name,
+    currencyCode: account.currencyCode,
+    color: account.color,
+    type: account.type,
+  };
 }
 
 /**
  * Writes a set of parsed transactions to Firestore in a single batch.
- * Builds the full Transaction object matching the webapp structure.
+ *
+ * Exchanges arrive as two legs sharing a `transferGroup`: they become a single
+ * transfer with both legs cross-linked, so moving money between the user's own
+ * accounts never inflates income or expense.
  *
  * @param {string} userId
- * @param {Array} parsedTransactions - [{ amount, income, categoryId, subcategoryId, description }]
- * @param {Object} categoriesMap - Result of getCategoriesMap
+ * @param {Array} parsedTransactions - [{ amount, type, accountId, description, transferGroup? }]
+ * @param {Object} accountsMap - Result of getAccountsMap
  */
-async function writeTransactions(userId, parsedTransactions, categoriesMap) {
+async function writeTransactions(userId, parsedTransactions, accountsMap) {
   const db = getFirestore();
   const batch = db.batch();
+  const date = Timestamp.now();
 
-  parsedTransactions.forEach((t) => {
-    const category = categoriesMap[t.categoryId];
-    if (!category) throw new Error(`Category ${t.categoryId} not found`);
+  const prepared = parsedTransactions.map((t) => {
+    const account = accountsMap[t.accountId];
+    if (!account) throw new Error(`Account ${t.accountId} not found`);
+    return { ...t, account, ref: db.collection('transactions').doc() };
+  });
 
-    const subcategory = t.subcategoryId
-      ? (category.subcategories || []).find((s) => s.id === t.subcategoryId)
-      : undefined;
+  // Pair up the legs of each exchange by their transferGroup.
+  const groups = {};
+  prepared.forEach((t) => {
+    if (!t.transferGroup) return;
+    (groups[t.transferGroup] = groups[t.transferGroup] || []).push(t);
+  });
 
-    const transactionCategory = subcategory ? { ...category, subcategory } : category;
+  const counterparts = new Map();
+  Object.values(groups).forEach((group) => {
+    if (group.length !== 2) return;
+    counterparts.set(group[0], group[1]);
+    counterparts.set(group[1], group[0]);
+  });
 
-    const ref = db.collection('transactions').doc();
-    batch.set(ref, {
+  prepared.forEach((t) => {
+    const counterpart = counterparts.get(t);
+    batch.set(t.ref, {
       userId,
       amount: t.amount,
-      income: t.income,
       description: t.description,
-      category: transactionCategory,
-      date: Timestamp.now(),
+      date,
       saving: false,
+      account: accountRef(t.account),
+      schemaVersion: SCHEMA_VERSION,
+      ...(counterpart
+        ? {
+            type: 'transfer',
+            transfer: {
+              direction: t.type === 'transfer_in' ? 'in' : 'out',
+              counterpartAccount: accountRef(counterpart.account),
+            },
+            linkedTransactionId: counterpart.ref.id,
+          }
+        : { type: t.type === 'income' ? 'income' : 'expense' }),
     });
   });
 
   await batch.commit();
 }
 
-/**
- * Returns the current net balance for a specific category/subcategory (Option A).
- * Reads only transactions matching userId + categoryId [+ subcategoryId].
- *
- * @param {string} userId
- * @param {string} categoryId
- * @param {string|null} subcategoryId
- * @returns {Promise<number>}
- */
-async function getSubcategoryBalance(userId, categoryId, subcategoryId) {
-  const db = getFirestore();
-
-  let query = db
-    .collection('transactions')
-    .where('userId', '==', userId)
-    .where('category.id', '==', categoryId);
-
-  if (subcategoryId) {
-    query = query.where('category.subcategory.id', '==', subcategoryId);
-  }
-
-  const snapshot = await query.get();
-  return snapshot.docs.reduce((acc, doc) => {
-    const { amount, income } = doc.data();
-    return income ? acc + amount : acc - amount;
-  }, 0);
+/** How much a transaction adds to or subtracts from its account's balance. */
+function signedAmount(data) {
+  // `income` only survives on documents the migration has not reached yet.
+  const type = data.type || (data.income ? 'income' : 'expense');
+  if (type === 'income') return data.amount;
+  if (type === 'expense') return -data.amount;
+  return data.transfer?.direction === 'in' ? data.amount : -data.amount;
 }
 
 /**
- * Builds a formatted balance summary for all unique category/subcategory pairs
- * involved in a set of transactions.
+ * Returns the current balance for a specific account (Option A).
+ * Reads only transactions matching userId + accountId.
+ *
+ * `openingBalance` is the money that was already in the account before mio
+ * started tracking it. The webapp counts it the same way — leaving it out here
+ * would make the bot report a different number than the screen.
+ *
+ * @param {string} userId
+ * @param {string} accountId
+ * @param {number} openingBalance
+ * @returns {Promise<number>}
+ */
+async function getAccountBalance(userId, accountId, openingBalance = 0) {
+  const db = getFirestore();
+
+  const snapshot = await db
+    .collection('transactions')
+    .where('userId', '==', userId)
+    .where('account.id', '==', accountId)
+    .get();
+
+  return snapshot.docs.reduce(
+    (acc, doc) => acc + signedAmount(doc.data()),
+    openingBalance,
+  );
+}
+
+/**
+ * Builds a formatted balance summary for every account involved in a set of
+ * transactions.
  *
  * @param {string} userId
  * @param {Array} transactions - The parsed transactions that were just written
- * @param {Object} categoriesMap
+ * @param {Object} accountsMap
  * @returns {Promise<string>}
  */
-async function buildBalanceSummary(userId, transactions, categoriesMap) {
-  // Deduplicate by categoryId + subcategoryId
-  const seen = new Set();
-  const unique = transactions.filter((t) => {
-    const key = `${t.categoryId}__${t.subcategoryId || ''}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+async function buildBalanceSummary(userId, transactions, accountsMap) {
+  const uniqueIds = [...new Set(transactions.map((t) => t.accountId))];
 
   const lines = await Promise.all(
-    unique.map(async (t) => {
-      const category = categoriesMap[t.categoryId];
-      const subcategory = t.subcategoryId
-        ? (category?.subcategories || []).find((s) => s.id === t.subcategoryId)
-        : null;
-
-      const balance = await getSubcategoryBalance(userId, t.categoryId, t.subcategoryId);
-      const label = subcategory
-        ? `${category.name} ${subcategory.name}`
-        : category?.name || t.categoryId;
-      const formatted = toLocaleAmount(balance);
-      return `  ${label}: ${formatted} ${category?.currencyCode || ''}`;
+    uniqueIds.map(async (accountId) => {
+      const account = accountsMap[accountId];
+      const balance = await getAccountBalance(
+        userId,
+        accountId,
+        account?.openingBalance ?? 0,
+      );
+      const label = account?.name || accountId;
+      return `  ${label}: ${toLocaleAmount(balance)} ${account?.currencyCode || ''}`;
     }),
   );
 
@@ -195,9 +235,9 @@ export {
   getUserByPhone,
   getUserByTelegramId,
   linkTelegramUser,
-  getCategoriesMap,
-  getCategoriesList,
+  getAccountsMap,
+  getAccountsList,
   writeTransactions,
-  getSubcategoryBalance,
+  getAccountBalance,
   buildBalanceSummary,
 };

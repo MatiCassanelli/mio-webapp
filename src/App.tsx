@@ -7,18 +7,15 @@ import { theme } from 'theme';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { CategoryProvider } from 'context/CategoryContext';
 dayjs.locale('es');
 
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
         <UserProvider>
-          <CategoryProvider>
-            <Routes />
-          </CategoryProvider>
+          <Routes />
         </UserProvider>
       </LocalizationProvider>
     </ThemeProvider>
